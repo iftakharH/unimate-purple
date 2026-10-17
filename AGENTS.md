@@ -44,17 +44,18 @@ src/
   app/                      Next.js App Router routes (pages, layouts, route handlers)
     (auth)/                 Centered auth shell — login, signup, recovery, change-password, banned
     (protected)/            Signed-in shell with REAL guards — settings, become-seller,
-                            seller (store editor + listings CRUD), admin (grows each phase)
+                            saved, seller (store editor + listings CRUD), admin (grows each phase)
     auth/callback/          PKCE code exchange for every Supabase email link
-    browse/                 PUBLIC catalog — URL-synced search/filters/sort/pagination
-    listing/[id]/           PUBLIC listing page — gallery, save, report (actions.ts)
-    store/[slug]/           PUBLIC storefront (hero entrance, listing grid, scroll reveals)
+    browse/                 GATED catalog (sign-in) — URL-synced search/filters/pagination
+    listing/[id]/           GATED listing page — gallery, save, report (actions.ts)
+    store/[slug]/           GATED storefront (hero entrance, listing grid, scroll reveals)
     layout.tsx              Root layout (fonts, theme + motion providers, toaster)
     page.tsx                Marketplace home — ambient hero, category rail, latest listings
   components/
     brand.tsx, theme-toggle.tsx, submit-button.tsx, user-menu.tsx, settings-tabs.tsx
     admin-tabs.tsx, seller-tabs.tsx, public-header.tsx, motion-provider.tsx
-    ambient-backdrop.tsx    Ambient colour fields (hues from lib/colors.ts)
+    ambient-backdrop.tsx    Ambient veil — mask + dot grid + colour fields (every page)
+    site-footer.tsx         Shared footer (marketplace surfaces; role-aware links)
     category-rail.tsx       Colourful category tiles (deterministic duotones)
     listing-card.tsx        Shared card — duotone placeholder when no photo
     store-hero.tsx          Storefront hero (deterministic brand-family banner hue)
@@ -75,7 +76,7 @@ supabase/
   migrations/               Ordered SQL migrations — schema lives HERE, never ad-hoc dashboard
                             edits. Append-only (ADR-007).
   seed.sql                  Idempotent seed (categories). Demo listings arrive in Phase 4.
-  tests/rls_checklist.sql   Canonical 17-check RLS proof. Re-run after ANY schema/policy change.
+  tests/rls_checklist.sql   Canonical 20-check RLS proof. Re-run after ANY schema/policy change.
 scripts/
   create-test-users.mjs     Throwaway accounts via admin API, email_confirm → sends NO email.
                             `node scripts/create-test-users.mjs [--delete]`

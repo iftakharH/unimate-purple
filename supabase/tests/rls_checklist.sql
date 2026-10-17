@@ -309,6 +309,36 @@ begin
     failures := failures + 1;
   end if;
 
+  -- ---------- TEST 18: anonymous visitors cannot read any listing (ADR-015) --
+  perform set_config('role', 'anon', true);
+  perform set_config('request.jwt.claims', '', true);
+  select count(*) into v_count from public.listings;
+  if v_count = 0 then
+    results := results || e'\nPASS  T18 anon sees zero listings (sign-in required)';
+  else
+    results := results || e'\nFAIL  T18 anon read ' || v_count || ' listing(s)';
+    failures := failures + 1;
+  end if;
+
+  -- ---------- TEST 19: anonymous visitors cannot read listing photos ---------
+  select count(*) into v_count from public.listing_images;
+  if v_count = 0 then
+    results := results || e'\nPASS  T19 anon sees zero listing photos';
+  else
+    results := results || e'\nFAIL  T19 anon read ' || v_count || ' photo row(s)';
+    failures := failures + 1;
+  end if;
+
+  -- ---------- TEST 20: anonymous visitors cannot read store pages -----------
+  select count(*) into v_count from public.stores;
+  if v_count = 0 then
+    results := results || e'\nPASS  T20 anon sees zero stores';
+  else
+    results := results || e'\nFAIL  T20 anon read ' || v_count || ' store(s)';
+    failures := failures + 1;
+  end if;
+  perform set_config('role', 'postgres', true);
+
   raise exception e'RLS CHECKLIST — % failure(s)%', failures, results;
 end;
 $rls_checklist$;

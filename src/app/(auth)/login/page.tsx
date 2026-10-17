@@ -25,6 +25,11 @@ export default async function LoginPage({
           That link is invalid or has expired. Sign in, or request a new link.
         </Alert>
       )}
+      {next && !linkError && !deleted && (
+        <p className="text-sm text-muted-foreground">
+          Sign in to continue where you left off.
+        </p>
+      )}
       <LoginForm next={next} />
     </div>
   );

@@ -277,44 +277,72 @@
 }
 
 /* --------------------------------------------------------------------------
-   Ambient backdrop — layered colour fields behind public pages.
-   Hues come from src/lib/colors.ts via --ab-hue-a / --ab-hue-b.
-   Dark mode lowers lightness + chroma (designed, not inverted) and the
-   grain layer on top kills gradient banding.
+   Ambient veil — the backdrop composition used on every page.
+   Three stacked, CSS-only layers:
+     1. .ambient-veil      — masks the composition so it dissolves into the page
+     2. .ambient-dots      — a fine dot grid for structure (static)
+     3. .ambient-backdrop  — colour fields, drifting 26s (transform-only)
+   Hues come from src/lib/colors.ts via --ab-hue-a / --ab-hue-b, set on the
+   veil element so both children inherit them. Dark mode is designed
+   separately — deeper and a touch richer, never a washed-out inversion.
    -------------------------------------------------------------------------- */
+.ambient-veil {
+  mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 45%,
+    transparent 100%
+  );
+}
+.ambient-dots {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    oklch(0.55 0.05 var(--ab-hue-a) / 0.18) 1px,
+    transparent 1.6px
+  );
+  background-size: 22px 22px;
+}
+.dark .ambient-dots {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    oklch(0.8 0.06 var(--ab-hue-a) / 0.1) 1px,
+    transparent 1.6px
+  );
+}
 .ambient-backdrop {
   background-image:
     radial-gradient(
-      45% 60% at 15% 0%,
-      oklch(0.84 0.15 var(--ab-hue-a) / 0.6),
-      transparent 70%
+      52% 66% at 14% -8%,
+      oklch(0.8 0.17 var(--ab-hue-a) / 0.62),
+      transparent 68%
     ),
     radial-gradient(
-      40% 55% at 85% 8%,
-      oklch(0.87 0.13 var(--ab-hue-b) / 0.55),
-      transparent 70%
+      46% 58% at 88% -2%,
+      oklch(0.86 0.15 var(--ab-hue-b) / 0.55),
+      transparent 66%
     ),
     radial-gradient(
-      62% 72% at 50% -12%,
-      oklch(0.88 0.09 var(--ab-hue-a) / 0.5),
-      transparent 75%
+      84% 92% at 50% -30%,
+      oklch(0.9 0.1 var(--ab-hue-a) / 0.48),
+      transparent 74%
     );
 }
 .dark .ambient-backdrop {
   background-image:
     radial-gradient(
-      45% 60% at 15% 0%,
-      oklch(0.45 0.15 var(--ab-hue-a) / 0.6),
-      transparent 70%
+      52% 66% at 14% -8%,
+      oklch(0.52 0.18 var(--ab-hue-a) / 0.6),
+      transparent 68%
     ),
     radial-gradient(
-      40% 55% at 85% 8%,
-      oklch(0.43 0.13 var(--ab-hue-b) / 0.55),
-      transparent 70%
+      46% 58% at 88% -2%,
+      oklch(0.47 0.16 var(--ab-hue-b) / 0.55),
+      transparent 66%
     ),
     radial-gradient(
-      62% 72% at 50% -12%,
-      oklch(0.4 0.1 var(--ab-hue-a) / 0.5),
-      transparent 75%
+      84% 92% at 50% -30%,
+      oklch(0.4 0.12 var(--ab-hue-a) / 0.5),
+      transparent 74%
     );
 }

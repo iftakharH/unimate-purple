@@ -265,3 +265,42 @@ export async function deleteListingAction(
   revalidatePath("/browse");
   redirect("/seller/listings");
 }
+
+// ---------- status (sold / sold out / relist) ------------------------------------------
+
+const STATUS_MESSAGES: Record<string, string> = {
+  sold: "Marked as sold — it's hidden from browse but stays in your list.",
+  sold_out: "Marked as sold out — buyers can't see it any more.",
+  active: "Listing is live again.",
+};
+
+export async function setListingStatusAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const auth = await sellerContext();
+  if (!auth.ok) return auth.state;
+  const { supabase, user } = auth;
+
+  const listingId = stringField(formData, "listing_id");
+  const status = stringField(formData, "status");
+  if (!/^[0-9a-f-]{36}$/i.test(listingId)) return errorState("Unknown listing.");
+  if (status !== "sold" && status !== "sold_out" && status !== "active") {
+    return errorState("Unknown status.");
+  }
+
+  const { data: updated, error } = await supabase
+    .from("listings")
+    .update({ status })
+    .eq("id", listingId)
+    .eq("seller_id", user.id)
+    .select("id");
+
+  if (error) return errorState("Could not update the listing — please try again.");
+  if (!updated || updated.length === 0) return errorState("Listing not found.");
+
+  revalidatePath("/seller/listings");
+  revalidatePath(`/listing/${listingId}`);
+  revalidatePath("/browse");
+  return successState(STATUS_MESSAGES[status]);
+}

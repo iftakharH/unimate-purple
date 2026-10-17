@@ -1,4 +1,4 @@
-import { Plus, Search } from "lucide-react";
+import { Heart, Plus, Search } from "lucide-react";
 import Link from "next/link";
 
 import { Brand } from "@/components/brand";
@@ -33,6 +33,16 @@ export async function PublicHeader() {
             className="hidden sm:inline-flex"
           >
             <Plus aria-hidden /> Sell
+          </Button>
+        ) : null}
+        {user ? (
+          <Button
+            render={<Link href="/saved" aria-label="Saved items" />}
+            nativeButton={false}
+            variant="ghost"
+            size="icon-sm"
+          >
+            <Heart aria-hidden />
           </Button>
         ) : null}
         <ThemeToggle />

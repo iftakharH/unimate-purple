@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Phone, Store as StoreIcon } from "lucide-react";
 
+import { AmbientBackdrop } from "@/components/ambient-backdrop";
 import { ListingCard, type CardListing } from "@/components/listing-card";
+import { SiteFooter } from "@/components/site-footer";
 import { StoreHero } from "@/components/store-hero";
 import { Button } from "@/components/ui/button";
+import { getAuthContext } from "@/lib/auth";
+import { BRAND_HUE, PARTNER_HUES } from "@/lib/colors";
 import { createClient } from "@/lib/supabase/server";
 
 type StorePageParams = Promise<{ slug: string }>;
@@ -26,6 +30,8 @@ export async function generateMetadata({
   params: StorePageParams;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const { user } = await getAuthContext();
+  if (!user) return { title: "Sign in" };
   const store = await getStore(slug);
   if (!store) return { title: "Store not found" };
   return {
@@ -38,6 +44,11 @@ export async function generateMetadata({
 
 export default async function StorePage({ params }: { params: StorePageParams }) {
   const { slug } = await params;
+
+  // Marketplace access requires sign-in (ADR-015).
+  const { user } = await getAuthContext();
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/store/${slug}`)}`);
+
   const store = await getStore(slug);
   if (!store || !store.is_active) notFound();
 
@@ -54,19 +65,22 @@ export default async function StorePage({ params }: { params: StorePageParams })
   const activeListings = (listings ?? []) as CardListing[];
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:py-8">
-      <StoreHero
-        store={{
-          slug: store.slug,
-          business_name: store.business_name,
-          description: store.description,
-          logo_url: store.logo_url,
-          banner_url: store.banner_url,
-          pickup_location: store.pickup_location,
-          created_at: store.created_at,
-          listingCount: activeListings.length,
-        }}
-      />
+    <div className="relative flex min-h-svh flex-col">
+      <AmbientBackdrop hueA={BRAND_HUE} hueB={PARTNER_HUES[1]} height="480px" />
+
+      <div className="mx-auto w-full max-w-6xl flex-1 space-y-8 px-4 py-6 sm:py-8">
+        <StoreHero
+          store={{
+            slug: store.slug,
+            business_name: store.business_name,
+            description: store.description,
+            logo_url: store.logo_url,
+            banner_url: store.banner_url,
+            pickup_location: store.pickup_location,
+            created_at: store.created_at,
+            listingCount: activeListings.length,
+          }}
+        />
 
       <div className="flex flex-wrap items-center gap-3 px-4 sm:px-6">
         {store.contact_phone && (
@@ -120,7 +134,10 @@ export default async function StorePage({ params }: { params: StorePageParams })
             ))}
           </div>
         )}
-      </section>
+        </section>
+      </div>
+
+      <SiteFooter />
     </div>
   );
 }

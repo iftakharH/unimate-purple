@@ -279,3 +279,58 @@ campus listings outgrow a few hundred.
 
 **Reversal.** Swap the grid for a client fetch + sentinel when traffic justifies it; the URL
 grammar stays identical.
+
+---
+
+## ADR-015 — Marketplace requires sign-in; products are students-only (2026-10-18)
+
+**Decision.** Per the user's Phase 5 directive ("can not see any product without
+login/creating account"): the marketplace is gated end to end.
+
+- **Pages**: `/browse`, `/listing/[id]`, `/store/[slug]` redirect anonymous visitors to
+  `/login?next=…` (browse preserves its full query string; the login screen shows a "continue"
+  hint). Login returns the visitor to the exact target; the default is the marketplace home.
+- **Signed-out home is a landing, not a catalogue**: hero, aggregate stats behind a lock chip,
+  category rail, feature cards, footer — **zero products**.
+- **API layer (migration 13)**: `listings`, `listing_images` and `stores` SELECT policies now
+  require the `authenticated` role — the anon key alone reads nothing. RLS checklist extended
+  with T18–T20 proving it (20/20).
+- **Storage stays public-read**: photo URLs are unguessable UUID paths and only discoverable
+  through the now-gated rows. Making buckets private would force signed-URL plumbing through
+  `next/image` for no real security gain at this scale. Revisit if buckets ever hold anything
+  sensitive.
+
+**Why.** The user owns this product rule; this is also normal for a campus-only marketplace
+(trust + privacy + funnel clarity). The important part is that the rule is enforced at the
+data layer, not just by hiding pages — a redirect is UX, RLS is the boundary.
+
+**Reversal.** Re-opening public browsing = drop the page redirects and restore the three
+policies in a new migration (append-only). One file, one migration, no app rebuild.
+
+---
+
+## ADR-016 — Ambient veil v2: one backdrop system on every page + site footer (2026-10-18)
+
+**Decision.** The user asked for backgrounds that are "more elegant and effective" on
+**every** page. The composition (`.ambient-veil` + `.ambient-dots` + `.ambient-backdrop`,
+via one `AmbientBackdrop` component) is now:
+
+1. **Masked** — the whole composition dissolves into the page with a mask gradient instead of
+   ending at an arbitrary edge (the single biggest elegance win).
+2. **Structured** — a fine dot grid at 1%-ish alpha gives the wash definition; static while
+   the colour drifts beneath it.
+3. **Richer colour** — larger, better-placed fields (brand hue anchored top-left, partner
+   hue top-right, crown glow) and a **separately designed dark mode** (deeper, +chroma) — not
+   an inverted light version.
+4. Applied to **all page families**: landing/marketplace, browse, listing, storefront, every
+   protected screen (subtle, 380 px, 70% opacity) and the auth screens (previously a bespoke
+   glow — retired). One system, one file to tune.
+
+A shared `SiteFooter` (brand, Marketplace/Account/Campus columns that adapt to role, legal
+line) runs on the marketplace surfaces; the landing page uses it per the user's request.
+
+**Why.** Consistency reads as design; bespoke per-page decoration reads as drift. Subtlety is
+enforced by tokens (alpha + mask + opacity), so "everywhere" never becomes "noisy" — protected
+work screens keep 70% of an already-soft wash.
+
+**Reversal.** Tone/intensity = two CSS blocks; coverage = remove the component from a shell.

@@ -3,11 +3,14 @@ import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Layered colour-field backdrop for public pages (home, browse, listings).
+ * The ambient veil — the backdrop composition on every page.
  *
- * Pure CSS: three soft radial fields over a slow transform-only drift with
- * the shared grain on top. Display-only, behind content, dark-mode aware.
- * Hues come from src/lib/colors.ts — never raw values at call sites.
+ * Three stacked CSS-only layers (see the .ambient-* block in globals.css):
+ * a masking veil so the composition dissolves into the page, a fine dot grid
+ * for structure, and drifting colour fields. Hues come from src/lib/colors.ts
+ * and are set here as CSS custom properties so both layers inherit them.
+ *
+ * Display-only, behind content, dark-mode aware. Never place content inside.
  */
 export function AmbientBackdrop({
   hueA,
@@ -24,20 +27,19 @@ export function AmbientBackdrop({
     <div
       aria-hidden
       className={cn(
-        "pointer-events-none absolute inset-x-0 top-0 -z-10 overflow-hidden",
+        "ambient-veil pointer-events-none absolute inset-x-0 top-0 -z-10 overflow-hidden",
         className,
       )}
-      style={{ height }}
+      style={
+        {
+          height,
+          "--ab-hue-a": String(hueA),
+          "--ab-hue-b": String(hueB),
+        } as CSSProperties
+      }
     >
-      <div
-        className="ambient-backdrop ambient-drift grain absolute -inset-x-[12%] -bottom-[40%] -top-[45%]"
-        style={
-          {
-            "--ab-hue-a": String(hueA),
-            "--ab-hue-b": String(hueB),
-          } as CSSProperties
-        }
-      />
+      <div className="ambient-dots absolute inset-0" />
+      <div className="ambient-backdrop ambient-drift grain absolute -inset-x-[12%] -bottom-[40%] -top-[45%]" />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
 import { formatBdt, formatDate } from "@/lib/format";
+import { ListingStatusForm } from "./status-form";
 
 export const metadata: Metadata = { title: "My listings" };
 
@@ -78,7 +79,7 @@ export default async function SellerListingsPage() {
             return (
               <div
                 key={listing.id}
-                className="elev-1 flex items-center gap-4 rounded-2xl border bg-card p-3"
+                className="elev-1 flex flex-wrap items-center gap-3 rounded-2xl border bg-card p-3"
               >
                 <div className="relative size-16 shrink-0 overflow-hidden rounded-xl border bg-muted/50">
                   {cover ? (
@@ -109,6 +110,11 @@ export default async function SellerListingsPage() {
                 >
                   {listing.status.replace("_", " ")}
                 </Badge>
+
+                <ListingStatusForm
+                  listingId={listing.id}
+                  status={listing.status}
+                />
 
                 <div className="flex shrink-0 gap-1.5">
                   <Button

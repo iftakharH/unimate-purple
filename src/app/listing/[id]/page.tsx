@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   BadgeCheck,
   Calendar,
@@ -15,6 +15,7 @@ import {
 
 import { AmbientBackdrop } from "@/components/ambient-backdrop";
 import { PublicHeader } from "@/components/public-header";
+import { SiteFooter } from "@/components/site-footer";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -52,6 +53,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return { title: "Listing not found" };
+  const { user } = await getAuthContext();
+  if (!user) return { title: "Sign in" };
   const listing = await getListing(id);
   if (!listing) return { title: "Listing not found" };
   return {
@@ -70,13 +73,17 @@ export default async function ListingPage({
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
 
+  // Marketplace access requires sign-in (ADR-015) — check BEFORE the query so
+  // anonymous visitors get the login redirect, not a 404.
+  const { user, profile } = await getAuthContext();
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/listing/${id}`)}`);
+
   const listing = await getListing(id);
   if (!listing) notFound();
 
   const sp = await searchParams;
   const justCreated = sp.created === "1";
 
-  const { user, profile } = await getAuthContext();
   const supabase = await createClient();
   const isOwner = user?.id === listing.seller_id;
   const isAdmin = profile?.role === "admin";
@@ -92,14 +99,12 @@ export default async function ListingPage({
       .select("id, full_name, avatar_url, bio")
       .eq("id", listing.seller_id)
       .maybeSingle(),
-    user
-      ? supabase
-          .from("saved_items")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("listing_id", listing.id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
+    supabase
+      .from("saved_items")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("listing_id", listing.id)
+      .maybeSingle(),
   ]);
 
   const images = imagesRes.data ?? [];
@@ -296,6 +301,8 @@ export default async function ListingPage({
           </aside>
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

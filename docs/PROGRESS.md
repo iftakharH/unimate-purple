@@ -2,7 +2,7 @@
 
 > Living document. Updated at the END of every phase, before the user is asked to test.
 > A phase is **DONE** only when all three gates are green and the user confirms the manual
-> test. Current phase: **awaiting user test of Phase 4**.
+> test. Current phase: **awaiting user test of Phase 5**.
 
 ## Phase overview
 
@@ -12,8 +12,8 @@
 | 1 | Database schema, RLS, storage buckets, seed | **DONE — user proceeded** | 17/17 RLS checks, advisors clean |
 | 2 | Auth: domain restriction, super-admin bootstrap, invite/direct-create, password flows | **DONE — user proceeded** | 13 routes, browser-verified, 0 emails sent |
 | 3 | Roles, seller requests, stores, store pages | **DONE — user proceeded** | See Phase 3 section |
-| 4 | Listings: create/edit with photos, browse, search, filters, product page | **Awaiting user test** | See Phase 4 section |
-| 5 | Saved items, My Listings, sold/sold-out handling | Not started | — |
+| 4 | Listings: create/edit with photos, browse, search, filters, product page | **DONE — user proceeded** | See Phase 4 section |
+| 5 | Saved items, My Listings management, sold/sold-out, gated marketplace, veil & footer | **Awaiting user test** | See Phase 5 section |
 | 6 | Realtime chat + notifications | Not started | — |
 | 7 | Deals tracker + mock payment | Not started | — |
 | 8 | Profiles and account pages | Not started | — |
@@ -331,3 +331,69 @@
   (refresh-token rotation) — sign in again; nothing is lost.
 - New demo data: "iPad 9th Gen — 64GB WiFi, with Pencil" (৳28,500, with a real photo) created
   through the UI as test-buyer, alongside the 4 seeded listings.
+
+---
+
+## Phase 5 — Saved items, listing lifecycle, gated marketplace, veil & footer — 2026-10-18
+
+### Built
+
+- **Marketplace is students-only now** (user directive; ADR-015): `/browse`, `/listing/[id]`
+  and `/store/[slug]` redirect signed-out visitors to `/login?next=…` (browse keeps its full
+  query string). Login returns you exactly where you were headed; default lands on the
+  marketplace. Signed-out home shows a **landing** instead: hero, locked live-stats line
+  ("5 listings live from 1 campus store — sign in to browse"), categories, "What's inside"
+  feature cards, closing CTA — **zero products visible**.
+- **The gate holds at the API layer too** (migration 13): `listings`, `listing_images` and
+  `stores` SELECT policies now require `authenticated` — the public anon key cannot read
+  product data. RLS checklist extended to **20 checks** (T18–T20), **20/20 pass**.
+- **Footer** (`site-footer.tsx`): brand + tagline, Marketplace / Account / Campus columns
+  (links adapt to signed-in state and seller role; no placeholder links) + legal line.
+  On landing, marketplace home, browse, listing and storefront pages.
+- **Ambient veil v2 — the elegant backdrop on every page** (ADR-016): one component, three
+  CSS-only layers — a mask that dissolves the composition into the page, a fine dot grid for
+  structure, and drifting colour fields (dark mode designed separately, deeper and richer).
+  Applied to landing, marketplace, browse, listing, storefront, **every protected screen
+  (settings, admin, seller) and the auth screens** — the old bespoke auth glow retired.
+- **Saved items** `/saved`: heart in both headers, saved-grid with Remove (optimistic-free,
+  toast + refresh), designed empty state, and an honest "n still unavailable" count when a
+  saved listing has since been sold/hidden (RLS filters it out of the join).
+- **My Listings management**: per-row status controls — **Mark sold / Sold out** on active
+  listings, **Relist** on anything else (one form, buttons carry the target status; toasts
+  confirm; rows update in place). Sold/sold out listings disappear from browse and storefront
+  for everyone else while the owner keeps them (with the status banner) via RLS.
+
+### Gate evidence (run 2026-10-18)
+
+| Gate | Method | Result |
+| --- | --- | --- |
+| `npm run type-check` / `lint` / `build` | local | ✅ / ✅ / ✅ (23 routes) |
+| RLS checklist (migration 13 applied) | Supabase MCP, full script | ✅ **20/20 pass** — incl. T18 anon listings, T19 anon photos, T20 anon stores |
+| Landing (signed-out) | Puppeteer: 0 listing links, locked stats line, features, footer present | ✅ pass |
+| Gate + round-trip | `/browse?q=ipad` → `/login?next=%2Fbrowse%3Fq%3Dipad` (query preserved, hint shown) → sign in → landed on `/browse?q=ipad`; store/listing redirects likewise | ✅ pass |
+| Saved items | iPad card → Remove → toast → "Nothing saved yet" empty state | ✅ pass |
+| Sold → hidden → relist | Mark sold → toast → absent from browse (count 5→4) → Relist → visible again | ✅ pass |
+| Veil on every page | landing / marketplace / browse / listing / storefront / settings / auth captured light + dark | ✅ pass |
+| Incident found & fixed | new server action 500'd once ("Cannot read properties of undefined (reading 'apply')") — stale dev action registry after editing a `"use server"` file; fixed by dev-server restart, flow re-verified after | ✅ resolved |
+| Emails sent during tests | — | **0** |
+
+### How to verify manually (for the user)
+
+1. **Signed out**: localhost:3000 → landing page, no products anywhere. Click **Browse** →
+   login screen with "Sign in to continue where you left off." Sign in
+   (`test-buyer@eastdelta.edu.bd` / `TestBuyer123`) → you land straight on browse.
+2. **Backdrop**: flip dark mode on any page — home, browse, settings, admin — the veil
+   (colour fields + dot grid, fading out) sits behind all of them now.
+3. **Saved**: heart icon in the header → Saved items; add something from a listing page, then
+   Remove it from the saved page.
+4. **Listing lifecycle** (seller): My listings → **Mark sold** on a listing → check it's gone
+   from /browse and the storefront → **Relist** → it's back. "Sold out" works the same way.
+
+### Notes / carry-forward
+
+- Home feed, category rail and search stay as-is once signed in — the gate only changes what
+  a visitor without an account can see.
+- Storage buckets remain public-read: photo URLs are unguessable and only discoverable
+  through the now-gated rows (ADR-015 documents the trade-off).
+- Chat/notifications (Phase 6) will re-use the same gated pattern.
+- `GET /saved` returned 404s in the dev log while the page did not exist yet — it exists now.

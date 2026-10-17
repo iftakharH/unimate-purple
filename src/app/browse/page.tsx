@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
-import { PackageSearch, Store } from "lucide-react";
+import { PackageSearch } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { AmbientBackdrop } from "@/components/ambient-backdrop";
 import { CategoryRail } from "@/components/category-rail";
 import { ListingCard, type CardListing } from "@/components/listing-card";
 import { PublicHeader } from "@/components/public-header";
+import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
+import { getAuthContext } from "@/lib/auth";
 import { BRAND_HUE, PARTNER_HUES } from "@/lib/colors";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -46,6 +49,18 @@ export default async function BrowsePage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
+
+  // Marketplace access requires sign-in (ADR-015) — products are students-only.
+  const { user } = await getAuthContext();
+  if (!user) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(sp)) {
+      if (typeof value === "string" && value !== "") params.set(key, value);
+    }
+    const query = params.toString();
+    redirect(`/login?next=${encodeURIComponent(query ? `/browse?${query}` : "/browse")}`);
+  }
+
   const q = sanitizeQuery(single(sp.q));
   const categorySlug = single(sp.category);
   const conditionRaw = single(sp.condition);
@@ -229,10 +244,7 @@ export default async function BrowsePage({
         )}
       </main>
 
-      <footer className="mx-auto flex w-full max-w-6xl items-center justify-center gap-2 px-4 py-6 text-center text-xs text-muted-foreground">
-        <Store className="size-3.5" aria-hidden />
-        Unimate · East Delta University student marketplace
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

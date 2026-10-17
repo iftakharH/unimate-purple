@@ -34,6 +34,7 @@ export async function toggleSavedItemAction(
     const { error } = await supabase.from("saved_items").delete().eq("id", existing.id);
     if (error) return { saved: true, error: "Could not remove — try again." };
     revalidatePath(`/listing/${listingId}`);
+    revalidatePath("/saved");
     return { saved: false };
   }
 
@@ -43,6 +44,7 @@ export async function toggleSavedItemAction(
   if (error) return { saved: false, error: "Could not save — try again." };
 
   revalidatePath(`/listing/${listingId}`);
+  revalidatePath("/saved");
   return { saved: true };
 }
 

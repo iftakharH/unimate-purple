@@ -41,12 +41,31 @@ Anything colourful beyond the tokens is **generated, never hand-picked** — one
   against brand violet (292). No component invents a hue.
 - **Deterministic per entity**: `hueForStore(slug)` (252–319° only), `categoryHues(slug)`,
   `listingHues(id)` — same input → same colour, so nothing shifts between renders.
-- **AmbientBackdrop** (`.ambient-backdrop` + drift + grain, `src/components/ambient-backdrop.tsx`):
-  three layered radial fields behind public pages; hue pair passed per page; dark mode has its own
-  (lower lightness/chroma) values. Intensity raised once on user feedback (2026-10-18).
 - **Placeholder tinting**: duotone gradients use alpha over the theme background — soft on light,
   muted on dark, from one definition.
 - The listing grid therefore glows with per-item variety while every hue stays brand-adjacent.
+
+### The ambient veil (ADR-016) — every page
+
+One component (`src/components/ambient-backdrop.tsx`), three CSS-only layers:
+
+| Layer | Class | Role |
+| --- | --- | --- |
+| Veil | `.ambient-veil` | mask gradient that dissolves the composition into the page |
+| Dots | `.ambient-dots` | fine dot grid (static) for structure |
+| Fields | `.ambient-backdrop` + drift + grain | colour fields, hues via `--ab-hue-*`, 26 s transform-only drift |
+
+- Coverage: landing/marketplace, browse, listing, storefront, all protected screens
+  (height 380 px, `opacity-70`), auth screens. Heights vary per page; hues per page family.
+- Dark mode has its own field definitions (deeper, +chroma) — never an inverted light wash.
+- Intensity rule: it must never compete with content — if in doubt, lower the alpha, not the
+  coverage.
+
+### Footer
+
+One `SiteFooter` (brand, Marketplace / Account / Campus columns, legal line) on the
+marketplace surfaces: landing, marketplace home, browse, listing, storefront. Column links
+adapt to signed-in state and seller role; no placeholder links.
 
 ## Space, radius, depth
 
