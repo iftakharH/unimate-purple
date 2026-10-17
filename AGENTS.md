@@ -47,18 +47,22 @@ src/
                             saved, seller (store editor + listings CRUD), admin (grows each phase)
     auth/callback/          PKCE code exchange for every Supabase email link
     browse/                 GATED catalog (sign-in) — URL-synced search/filters/pagination
-    listing/[id]/           GATED listing page — gallery, save, report (actions.ts)
+    listing/[id]/           GATED listing page — gallery, save, report, message seller
     store/[slug]/           GATED storefront (hero entrance, listing grid, scroll reveals)
     layout.tsx              Root layout (fonts, theme + motion providers, toaster)
-    page.tsx                Marketplace home — ambient hero, category rail, latest listings
+    page.tsx                Landing (signed out) / marketplace home (signed in) — kinetic hero
   components/
     brand.tsx, theme-toggle.tsx, submit-button.tsx, user-menu.tsx, settings-tabs.tsx
-    admin-tabs.tsx, seller-tabs.tsx, public-header.tsx, motion-provider.tsx
+    admin-tabs.tsx, seller-tabs.tsx, motion-provider.tsx, live-refresh.tsx
+    glass-nav.tsx           Floating glass navbar (90% -> compact on scroll) — client
+    site-nav.tsx            Server wrapper: viewer + live unread counts -> GlassNav
     ambient-backdrop.tsx    Ambient veil — mask + dot grid + colour fields (every page)
     site-footer.tsx         Shared footer (marketplace surfaces; role-aware links)
-    category-rail.tsx       Colourful category tiles (deterministic duotones)
+    category-rail.tsx       Colourful category tiles (rail + bento variants)
     listing-card.tsx        Shared card — duotone placeholder when no photo
     store-hero.tsx          Storefront hero (deterministic brand-family banner hue)
+    motion/                 WordReveal (kinetic headlines), Magnetic (pointer-follow),
+                            Marquee (CSS-only) — all reduced-motion-safe
     ui/                     shadcn/ui components (Base UI based — do NOT assume Radix APIs,
                             and Base UI has NO asChild: use `render={<Link …/>}` +
                             `nativeButton={false}` for link-buttons)

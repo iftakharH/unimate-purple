@@ -334,3 +334,56 @@ enforced by tokens (alpha + mask + opacity), so "everywhere" never becomes "nois
 work screens keep 70% of an already-soft wash.
 
 **Reversal.** Tone/intensity = two CSS blocks; coverage = remove the component from a shell.
+
+---
+
+## ADR-017 — Floating glass navbar: 90% at rest, compact on scroll (2026-10-18)
+
+**Decision.** Per the user's directive, every page family gets the same floating navbar: a
+translucent glass pill (backdrop-blur 20px + saturate, hairline border, layered shadow)
+fixed near the top. At the top of the page it spans **~90% of the viewport**; past ~24px of
+scroll it **morphs into a compact capsule that hugs its content** and sheds secondary links
+(Browse, Sell, Saved, theme; the avatar, bell and messages stay). The morph is a motion
+`layout` animation on a shared spring — measured, not guessed at CSS interpolation between
+`%` and `fit-content`.
+
+- One component (`glass-nav.tsx`, client) fed by one server wrapper (`site-nav.tsx`) — the
+  public and protected shells render the exact same pill, including live unread counts.
+- Content pages gained matching top padding since the nav is now an overlay.
+
+**Why.** A floating pill is the modern navbar idiom and it frees the old sticky bar; the
+shrink-on-scroll keeps actions reachable without eating vertical space after the hero. One
+component means the two shells can never drift apart.
+
+**Reversal.** Delete the scroll effect (or pin `compact = true`) for a static pill; the
+glass look is one utility class.
+
+---
+
+## ADR-018 — Design manifesto pass: kinetic landing, neon accent, monochrome dark (2026-10-18)
+
+**Decision.** The user asked for a decisive craft upgrade (their brief: reject the grid,
+typography first, kinetic energy, tactile micro-interactions, no purple-gradient dark modes).
+Applied where it expresses best, without breaking product usability:
+
+- **Landing page (the showpiece)**: asymmetric hero; display type at
+  `clamp(2.6rem, 8.5vw, 7rem)` with tight tracking; word-by-word kinetic reveal; outlined
+  stroke line (`-webkit-text-stroke` with an explicit colour — `currentColor` vanishes
+  against a transparent fill); magnetic CTA (`pointer-follow`, bounded, spring-back); CSS
+  marquee divider; bento category tiles; horizontal snap-scroll features; inverted black
+  closing block with neon hover.
+- **New accent token `--neon`** (electric lime, `oklch(0.87 0.24 132)`): unread badges,
+  marquee dots, live markers — sharp accents over soft surfaces, never fills.
+- **Dark mode de-clouded**: the dark veil's chroma halved toward near-black monochrome with
+  a violet hint, per the brief's distaste for purple-gradient dark modes. Light mode keeps
+  its colourful veil.
+- **Product pages stay clarity-first**: grids remain for catalog surfaces (a marketplace
+  grid is a tool, not a layout sin); they inherit the navbar, the depth language, tactile
+  buttons and the accent. `prefers-reduced-motion` degrades every kinetic piece.
+
+**Why.** The brief's energy belongs to the marketing surface; applying it wholesale to
+catalogue and form screens would trade usability for spectacle. This keeps one coherent
+brand: loud where it entertains, calm where it works.
+
+**Reversal.** All kinetic pieces are single components (`motion/word-reveal`, `magnetic`,
+`marquee`); the accent is one token; the dark veil is one CSS block.

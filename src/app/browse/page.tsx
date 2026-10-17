@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { AmbientBackdrop } from "@/components/ambient-backdrop";
 import { CategoryRail } from "@/components/category-rail";
 import { ListingCard, type CardListing } from "@/components/listing-card";
-import { PublicHeader } from "@/components/public-header";
+import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { getAuthContext } from "@/lib/auth";
@@ -143,9 +143,9 @@ export default async function BrowsePage({
   return (
     <div className="relative flex min-h-svh flex-col">
       <AmbientBackdrop hueA={PARTNER_HUES[1]} hueB={BRAND_HUE} height="480px" />
-      <PublicHeader />
+      <SiteNav />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 pb-16 pt-2">
+      <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 pb-16 pt-24 sm:pt-28">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">Browse</h1>
           <p className="tabular text-sm text-muted-foreground">

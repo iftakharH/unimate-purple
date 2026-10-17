@@ -332,17 +332,81 @@
   background-image:
     radial-gradient(
       52% 66% at 14% -8%,
-      oklch(0.52 0.18 var(--ab-hue-a) / 0.6),
+      oklch(0.46 0.09 var(--ab-hue-a) / 0.55),
       transparent 68%
     ),
     radial-gradient(
       46% 58% at 88% -2%,
-      oklch(0.47 0.16 var(--ab-hue-b) / 0.55),
+      oklch(0.42 0.08 var(--ab-hue-b) / 0.5),
       transparent 66%
     ),
     radial-gradient(
       84% 92% at 50% -30%,
-      oklch(0.4 0.12 var(--ab-hue-a) / 0.5),
+      oklch(0.36 0.06 var(--ab-hue-a) / 0.45),
       transparent 74%
     );
+}
+
+/* --------------------------------------------------------------------------
+   Glass — floating surfaces (navbar pill, overlays). Translucent + blur +
+   a hairline lit border; the neon token gives sharp accents on top of it.
+   -------------------------------------------------------------------------- */
+:root {
+  --neon: oklch(0.87 0.24 132);
+  --neon-ink: oklch(0.24 0.08 132);
+}
+.dark {
+  --neon: oklch(0.9 0.26 132);
+}
+
+.glass {
+  background: color-mix(in oklab, var(--background) 62%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(20px) saturate(170%);
+  border: 1px solid color-mix(in oklab, var(--foreground) 9%, transparent);
+  box-shadow:
+    0 24px 60px -32px oklch(0.2 0.06 292 / 0.5),
+    inset 0 1px 0 oklch(1 0 0 / 0.08);
+}
+.dark .glass {
+  background: color-mix(in oklab, var(--background) 52%, transparent);
+  border-color: color-mix(in oklab, var(--foreground) 14%, transparent);
+  box-shadow:
+    0 24px 60px -28px oklch(0 0 0 / 0.85),
+    inset 0 1px 0 oklch(1 0 0 / 0.05);
+}
+
+/* Infinite horizontal marquee — duplicate the track, translate -50%.
+   transform-only, pauses for reduced motion, never blocks interaction. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee var(--marquee-duration, 38s) linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* Horizontal scroll rows without a visible scrollbar (snap sections). */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Outlined display type — brutalist contrast against filled words.
+   Stroke colour must be explicit: `currentColor` would resolve to the
+   transparent fill and vanish. */
+.text-outline {
+  -webkit-text-stroke: 1.5px var(--foreground);
+  color: transparent;
 }

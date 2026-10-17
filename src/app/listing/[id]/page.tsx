@@ -5,7 +5,6 @@ import {
   BadgeCheck,
   Calendar,
   MapPin,
-  MessageCircle,
   Pencil,
   Package,
   ShieldCheck,
@@ -14,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { AmbientBackdrop } from "@/components/ambient-backdrop";
-import { PublicHeader } from "@/components/public-header";
+import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,6 +30,7 @@ import { BRAND_HUE, PARTNER_HUES } from "@/lib/colors";
 import { formatBdt, formatDate, initialsOf } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { Gallery } from "./gallery";
+import { MessageSellerButton } from "./message-seller";
 import { ReportListing } from "./report-listing";
 import { SaveButton } from "./save-button";
 
@@ -116,9 +116,9 @@ export default async function ListingPage({
   return (
     <div className="relative flex min-h-svh flex-col">
       <AmbientBackdrop hueA={PARTNER_HUES[2]} hueB={BRAND_HUE} height="440px" />
-      <PublicHeader />
+      <SiteNav />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 pb-16 pt-2">
+      <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 pb-16 pt-24 sm:pt-28">
         {justCreated && (
           <div className="flex items-center gap-2 rounded-2xl border border-success/40 bg-success/5 px-4 py-3 text-sm">
             <Sparkles className="size-4 text-success" aria-hidden />
@@ -226,16 +226,9 @@ export default async function ListingPage({
                       <Pencil aria-hidden /> Edit
                     </Button>
                   ) : (
-                    <Button variant="outline" disabled className="flex-1">
-                      <MessageCircle aria-hidden /> Message
-                    </Button>
+                    <MessageSellerButton listingId={listing.id} />
                   )}
                 </div>
-                {!isOwner && (
-                  <p className="text-center text-xs text-muted-foreground">
-                    Messaging and offers switch on with the chat & deals phase.
-                  </p>
-                )}
                 <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
                   <ShieldCheck className="size-3.5 text-success" aria-hidden />
                   Meet in public spots — library, cafeteria, main gate.

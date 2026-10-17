@@ -882,6 +882,10 @@ export type Database = {
       slugify: { Args: { input: string }; Returns: string }
       super_admin_emails: { Args: never; Returns: string[] }
       unique_store_slug: { Args: { base: string }; Returns: string }
+      marketplace_stats: {
+        Args: never
+        Returns: { active_listings: number; active_stores: number }[]
+      }
     }
     Enums: {
       deal_status:

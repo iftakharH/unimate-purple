@@ -2,7 +2,7 @@
 
 > Living document. Updated at the END of every phase, before the user is asked to test.
 > A phase is **DONE** only when all three gates are green and the user confirms the manual
-> test. Current phase: **awaiting user test of Phase 5**.
+> test. Current phase: **awaiting user test of Phase 6**.
 
 ## Phase overview
 
@@ -13,8 +13,8 @@
 | 2 | Auth: domain restriction, super-admin bootstrap, invite/direct-create, password flows | **DONE — user proceeded** | 13 routes, browser-verified, 0 emails sent |
 | 3 | Roles, seller requests, stores, store pages | **DONE — user proceeded** | See Phase 3 section |
 | 4 | Listings: create/edit with photos, browse, search, filters, product page | **DONE — user proceeded** | See Phase 4 section |
-| 5 | Saved items, My Listings management, sold/sold-out, gated marketplace, veil & footer | **Awaiting user test** | See Phase 5 section |
-| 6 | Realtime chat + notifications | Not started | — |
+| 5 | Saved items, My Listings management, sold/sold-out, gated marketplace, veil & footer | **DONE — user proceeded** | See Phase 5 section |
+| 6 | Realtime chat + notifications; glass navbar; kinetic landing | **Awaiting user test** | See Phase 6 section |
 | 7 | Deals tracker + mock payment | Not started | — |
 | 8 | Profiles and account pages | Not started | — |
 | 9 | Admin panel + audit log | Not started | — |
@@ -397,3 +397,70 @@
   through the now-gated rows (ADR-015 documents the trade-off).
 - Chat/notifications (Phase 6) will re-use the same gated pattern.
 - `GET /saved` returned 404s in the dev log while the page did not exist yet — it exists now.
+
+---
+
+## Phase 6 — Realtime chat & notifications + glass nav + kinetic landing — 2026-10-18
+
+### Built
+
+- **Realtime chat**: `/messages` (conversation list — partner avatar, last-message preview,
+  neon unread pills, listing thumb; live refresh on new messages) and `/messages/[id]`
+  (thread — server-rendered history, **Supabase Realtime** appends new messages live,
+  read receipts update on view + on receive, glass composer pinned at the bottom, Enter to
+  send). **"Message seller"** on every listing is now real: find-or-create the conversation
+  (race-safe via a unique index) and land in the thread.
+- **Notifications**: `on_message_created` trigger now also drops a notification for the
+  recipient (the DB is the only writer — no user insert policy, by design). The navbar bell
+  shows a **live unread count** (Realtime), `/notifications` lists everything with unread
+  styling, per-row "open" (marks read + follows the link) and **Mark all read**.
+- **Floating glass navbar on both shells** (ADR-017): a translucent, blurred pill — **90%
+  width at the top, morphing (spring) into a compact pill that hugs its content once you
+  scroll**, shedding secondary links. Brand, Browse, Sell, Messages (unread badge), Saved,
+  Bell (unread badge), theme and avatar; identical in the public and the signed-in shell.
+- **Landing redesign — the manifesto pass** (ADR-018): asymmetric hero with **word-by-word
+  kinetic reveal** on massive type (`clamp(2.6rem, 8.5vw, 7rem)`, tight tracking), the third
+  line in **outlined stroke type**, a **magnetic** primary CTA, a CSS **marquee** of category
+  names with neon dots, **bento** category tiles (two wide lives, uneven rest),
+  **horizontal snap-scroll** feature cards (01/02/03), and an inverted black closing block
+  with a neon-hover button. New tokens: `--neon` (electric lime) for sharp accents.
+- **Darker, less "purple-cloud" dark mode** per the brief: the dark veil's chroma dropped
+  (~half) toward a near-black monochrome with a violet hint; light mode unchanged.
+- **Migrations 14/15**: chat notification trigger + conversation unique index;
+  `marketplace_stats()` (SECURITY DEFINER, aggregate-only) so the signed-out landing shows
+  real counts without exposing rows.
+
+### Gate evidence (run 2026-10-18)
+
+| Gate | Method | Result |
+| --- | --- | --- |
+| `npm run type-check` / `lint` / `build` | local | ✅ / ✅ / ✅ (26 routes) |
+| RLS checklist (after trigger change) | Supabase MCP, full script | ✅ **20/20 pass** |
+| Chat end-to-end | admin → "Message seller" on buyer's iPad listing → thread → send message → bubble rendered; DB: message row + notification row "Test Admin sent you a message" → deep link | ✅ pass |
+| **Realtime** | buyer's thread open in the browser; reply inserted server-side → bubble appeared **with no refresh** (2 bubbles, live) | ✅ pass |
+| Notifications | buyer: list with 2 unread (neon dots), "Mark all read", row click → marks read + lands on the exact thread; unread counts drop to 0 | ✅ pass |
+| Glass nav | measured: expanded ≈90% of viewport, scrolled → compact pill (screenshot-verified both states on the landing + marketplace) | ✅ pass |
+| Landing | zero products signed-out, real counts via `marketplace_stats()` (3 listings / 1 store), outline headline renders, marquee + bento + horizontal features, footer | ✅ pass |
+| Bugs caught & fixed during the phase | (1) `text-outline` invisible — `currentColor` stroke resolved to the transparent fill; explicit `var(--foreground)` stroke. (2) Signed-out landing showed 0 counts after the Phase 5 gate — fixed by the aggregate function. (3) Startup type error on the new RPC — types file updated with the function signature | all fixed, gates re-run |
+| Emails sent during tests | — | **0** |
+
+### How to verify manually (for the user)
+
+1. **Navbar**: on any page, scroll — the pill shrinks from ~90% width to a compact capsule
+   and springs back at the top. The Messages and bell icons carry live unread counts.
+2. **Chat**: sign in as `test-admin@eastdelta.edu.bd` / `TestAdmin123`, open the iPad listing,
+   **Message seller** → send something. Sign in as `test-buyer@eastdelta.edu.bd` /
+   `TestBuyer123` in another window: the bell badge jumps immediately, `/messages` shows the
+   thread with an unread pill, and a reply appears **live** while the thread is open.
+3. **Notifications**: bell → list; click a row (it marks read and opens the thread);
+   "Mark all read" clears the badge.
+4. **Landing (signed out)**: big type reveals word-by-word, the outlined line, the marquee,
+   the bento tiles, the horizontal feature scroll — scroll to watch the nav morph.
+
+### Notes / carry-forward
+
+- Read receipts are stored (`messages.read_at`) and unread counts drive every badge; the UI
+  intentionally does not (yet) show "Seen" ticks on individual bubbles.
+- Typing indicators, image messages and message search are deliberately out of scope.
+- Store editor validation caught a real bad phone input during testing (inline error shown) —
+  working as designed.

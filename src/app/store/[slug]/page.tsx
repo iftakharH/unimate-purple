@@ -5,6 +5,7 @@ import { Phone, Store as StoreIcon } from "lucide-react";
 
 import { AmbientBackdrop } from "@/components/ambient-backdrop";
 import { ListingCard, type CardListing } from "@/components/listing-card";
+import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { StoreHero } from "@/components/store-hero";
 import { Button } from "@/components/ui/button";
@@ -67,8 +68,9 @@ export default async function StorePage({ params }: { params: StorePageParams })
   return (
     <div className="relative flex min-h-svh flex-col">
       <AmbientBackdrop hueA={BRAND_HUE} hueB={PARTNER_HUES[1]} height="480px" />
+      <SiteNav />
 
-      <div className="mx-auto w-full max-w-6xl flex-1 space-y-8 px-4 py-6 sm:py-8">
+      <div className="mx-auto w-full max-w-6xl flex-1 space-y-8 px-4 pb-6 pt-24 sm:pt-28">
         <StoreHero
           store={{
             slug: store.slug,

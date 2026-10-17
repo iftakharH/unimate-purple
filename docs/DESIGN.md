@@ -67,6 +67,29 @@ One `SiteFooter` (brand, Marketplace / Account / Campus columns, legal line) on 
 marketplace surfaces: landing, marketplace home, browse, listing, storefront. Column links
 adapt to signed-in state and seller role; no placeholder links.
 
+### Floating glass navbar (ADR-017)
+
+- One component, both shells: fixed pill near the top; **~90% viewport width at rest**,
+  morphing on scroll (motion `layout`, spring `gentle`) into a **compact capsule that hugs
+  its content** and drops secondary links.
+- Glass = `.glass` utility: translucency + `backdrop-blur(20px) saturate(170%)` + hairline
+  lit border + layered shadow (designed for light and dark separately).
+- Live badges (messages, notifications) use the neon token — the only saturated fill the
+  navbar ever shows.
+
+### Kinetic type & the manifesto pass (ADR-018)
+
+- Display scale: `clamp(2.6rem, 8.5vw, 7rem)`, `leading-[0.95]`, `tracking-tighter`.
+  Body copy stays small — contrast is the hierarchy.
+- Kinetic pieces (all optional, all reduced-motion-safe): `WordReveal` (word stagger on
+  headlines), `Magnetic` (pointer-follow CTAs, ≤12px, spring-back), `Marquee` (CSS-only,
+  -50% translate loop, pauses for reduced motion), scroll-driven CSS reveals (unchanged).
+- Outlined type (`.text-outline`) for one line per headline at most — never two.
+- Neon token usage: bullets over badges, dots, live markers. Never body text, never a
+  surface fill.
+- Dark mode is near-black monochrome with a violet hint (the veil's chroma is deliberately
+  low); light mode keeps the colourful veil. High-contrast, not gradient-cloud.
+
 ## Space, radius, depth
 
 - Spacing: 4-based scale — 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64.
