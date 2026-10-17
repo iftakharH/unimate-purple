@@ -192,3 +192,27 @@ recorded before the first screen is built.
 
 **Reversal.** Each answer is a token-level or dependency-level change; DESIGN.md is the single
 place to update.
+
+---
+
+## ADR-011 — Motion intensity upgraded; signature moment = store-live reveal (2026-10-18)
+
+**Decision.** The user asked for a more animated, "eye-catching" feel (with the explicit
+instruction to avoid generic AI-slop design). Interpretation per the design-motion skill:
+**lively at crafted moments, restrained everywhere else** — not motion everywhere (the
+skill's documented failure mode #2). Concretely:
+
+- One **signature moment**: the seller's store-going-live reveal, three beats
+  (anticipation → checkmark draw + name settle → LIVE badge stamp), under ~800 ms,
+  skippable, non-blocking, degraded to an instant state under reduced motion.
+- Orchestrated storefront hero entrance (parent-driven stagger, ≤6 items, ~650 ms) —
+  the single above-the-fold exception to "no animation on load" in product UI.
+- CSS scroll-driven reveals (`animation-timeline: view()`, zero JS, `@supports`-gated),
+  ambient transform-only banner drift, hover/press micro-interactions.
+- Store banner hues constrained to 252–319° (violet→indigo) for on-brand cohesion.
+
+**Why.** The user owns the taste decision (skill rule: ask, never assume). Restraint is what
+keeps it from reading as amateur; the moments are what make it memorable.
+
+**Reversal.** Motion intensity dials via `src/lib/motion.ts` presets and the reveal component;
+documented in DESIGN.md.

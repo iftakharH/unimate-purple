@@ -2,7 +2,7 @@
 
 > Living document. Updated at the END of every phase, before the user is asked to test.
 > A phase is **DONE** only when all three gates are green and the user confirms the manual
-> test. Current phase: **awaiting user test of Phase 2**.
+> test. Current phase: **awaiting user test of Phase 3**.
 
 ## Phase overview
 
@@ -10,8 +10,8 @@
 | --- | --- | --- | --- |
 | 0 | Pre-flight, scaffold, Supabase wiring, docs | **DONE** | ✅ type-check / lint / build |
 | 1 | Database schema, RLS, storage buckets, seed | **DONE — user proceeded** | 17/17 RLS checks, advisors clean |
-| 2 | Auth: domain restriction, super-admin bootstrap, invite/direct-create, password flows | **Awaiting user test** | See Phase 2 section |
-| 3 | Roles, seller requests, stores, store pages | Not started | — |
+| 2 | Auth: domain restriction, super-admin bootstrap, invite/direct-create, password flows | **DONE — user proceeded** | 13 routes, browser-verified, 0 emails sent |
+| 3 | Roles, seller requests, stores, store pages | **Awaiting user test** | See Phase 3 section |
 | 4 | Listings: create/edit with photos, browse, search, filters, product page | Not started | — |
 | 5 | Saved items, My Listings, sold/sold-out handling | Not started | — |
 | 6 | Realtime chat + notifications | Not started | — |
@@ -195,3 +195,63 @@
   rate-limited Supabase sender. Dashboard steps in the phase report.
 - Until then: signup confirmation, reset links and invite emails will not deliver; the
   **test accounts above bypass email entirely**, and admin *direct-create* needs no email.
+
+---
+
+## Phase 3 — Seller onboarding, review queue & store pages — 2026-10-18
+
+### Built
+
+- **Motion system** (ADR-011): `motion` via `LazyMotion` + `dmAnimation` + `strict`
+  (`src/components/motion-provider.tsx`), named spring presets and stagger variants in
+  `src/lib/motion.ts`, global `prefers-reduced-motion` for CSS **and** `MotionConfig` for JS.
+- **"Become a seller"** `(protected)/become-seller`: benefits row, validated request form,
+  state-aware page (pending timeline Submitted → Review → Store live; rejection note +
+  re-apply with defaults kept).
+- **Admin → Seller requests**: pending queue with note field + Approve/Reject, decision
+  history. Approval triggers the DB side-effects (role → seller, store created with unique
+  slug, requester notified) and writes an audit-log entry.
+- **Seller area** `(protected)/seller` (role-guarded): **My store** editor — branding card
+  (banner 16:6 + logo uploads straight to Storage), store details form (name, intro, phone,
+  pickup spot), public-page link.
+- **THE signature moment** (`store-live-reveal.tsx`): first visit after approval —
+  anticipation fade → checkmark draws + name settles → LIVE badge stamps with a bouncy
+  spring → CTAs. Under ~800ms of choreography, skippable (Skip / Esc / backdrop / auto 3.6s),
+  non-blocking, `MotionConfig` degrades it to an instant state for reduced-motion users.
+- **Public storefront** `/store/[slug]`: orchestrated hero entrance (parent-driven stagger,
+  ~650ms), deterministic on-brand banner hue per store (violet→indigo family, 252–319°),
+  ambient drift (26s, transform-only) + film grain, overlapping logo tile, meta chips
+  (listings count, joined, pickup), phone link, **listing grid** with scroll-driven CSS
+  reveals (`animation-timeline: view()`, `@supports`-gated, zero JS) and a designed empty
+  state. Shared `ListingCard` (hover lift, image zoom, condition/qty badges) — reused by
+  browse/home in Phase 4.
+- **Demo data**: "Rafi's Tech Corner" (test-buyer) with 4 realistic listings seeded via SQL.
+
+### Gate evidence (run 2026-10-18)
+
+| Gate | Method | Result |
+| --- | --- | --- |
+| `npm run type-check` / `lint` / `build` | local | ✅ / ✅ / ✅ (18 routes) |
+| End-to-end browser walkthrough (Puppeteer) | login → request → admin queue → approve → seller reveal → dismiss → storefront | ✅ every step, **0 dev-overlay issues at the end** |
+| Bugs caught by the walkthrough | (1) avatar menu crash — Base UI `GroupLabel` outside `Menu.Group` (found in dev-server logs, fixed); (2) hydration mismatch — client-only `localStorage` branch in the reveal (fixed: server-truth only) | both fixed & re-verified |
+| Design correction | slug-hash banner hue spanned all 360° (rendered yellow-green) → constrained to brand family | fixed |
+
+### How to verify manually (for the user)
+
+1. The whole flow is already live as demo data. **See the signature moment**: sign in as
+   `test-buyer@eastdelta.edu.bd` / `TestBuyer123`, visit `/become-seller` — you'll be
+   redirected and the "store is live" reveal plays.
+2. **Store editor**: `/seller/store` — upload a banner/logo, edit details, then open the
+   public page.
+3. **The storefront**: http://localhost:3000/store/rafi-s-tech-corner — hover the cards,
+   watch the entrance, scroll the grid reveals, try dark mode.
+4. **Admin queue**: sign in as `test-admin@eastdelta.edu.bd` / `TestAdmin123` →
+   Admin → Seller requests (history row from the test approval).
+
+### Notes / carry-forward
+
+- Listing **creation/editing UI** is Phase 4; the 4 demo listings were seeded via SQL.
+- The public storefront reads real data; listing detail pages (`/listing/[id]`) arrive in
+  Phase 4 — store cards link there already.
+
+### SMTP / email — still pending the user's provider choice (see Phase 2 section)

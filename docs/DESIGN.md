@@ -43,10 +43,24 @@ cards and ONE purple accent. Reference energy: Vinted (marketplace clarity) × L
 
 - Duration tokens: 120 / 180 / 240 ms; springs for anything movable and interruptible.
 - Product UI: nothing animates on page load. Landing page: at most one orchestrated entrance.
-- One signature moment later, at the marketplace core action (deal completion) — under 800 ms,
-  skippable, replaced by an instant dignified change under `prefers-reduced-motion`.
-- All motion goes through the shared primitives (created with the first animated feature);
-  `prefers-reduced-motion` is honoured for CSS *and* JS motion.
+- One signature moment: **the store-going-live reveal** on a seller's first visit after
+  approval (`store-live-reveal.tsx`) — three beats, under ~800 ms, skippable, degraded to an
+  instant state under `prefers-reduced-motion`.
+- Motion intensity upgraded by the user 2026-10-18 (ADR-011): *lively at crafted moments,
+  restrained everywhere else*. Concretely: orchestrated entrances on store pages, CSS
+  scroll-driven reveals, ambient banner drift (26 s, transform-only), hover/press micro-
+  interactions. Still zero animation-on-load in the working product UI.
+- All JS motion goes through `motion`'s `m.*` components under `LazyMotion strict`
+  (`src/components/motion-provider.tsx`); `MotionConfig reducedMotion="user"` handles the
+  OS preference for every JS animation. Named spring presets live in `src/lib/motion.ts`.
+- Scroll reveals use the CSS `animation-timeline: view()` API — zero bytes, `@supports`-
+  gated, and browsers without it render the final state (never a stuck animation).
+
+## Store banners
+
+Deterministic hue per store slug, constrained to **252–319°** (violet→indigo) so every store
+is visually distinct while staying inside the brand family. Overlaid with the shared grain
+utility and a slow transform-only drift; real uploaded banners replace the gradient entirely.
 
 ## States
 

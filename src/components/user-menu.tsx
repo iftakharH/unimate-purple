@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, LogOut, Settings, Shield } from "lucide-react";
+import { BadgePlus, LayoutDashboard, LogOut, Settings, Shield } from "lucide-react";
 import Link from "next/link";
 
 import { signOutAction } from "@/app/(auth)/actions";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -53,26 +54,33 @@ export function UserMenu({
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-56">
-        <DropdownMenuLabel>
-          <span className="block truncate font-medium text-foreground">
-            {fullName || "Unimate member"}
-          </span>
-          <span className="block truncate font-normal">{email}</span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link href="/settings" />}>
-          <Settings aria-hidden /> Settings
-        </DropdownMenuItem>
-        {role === "seller" ? (
-          <DropdownMenuItem render={<Link href="/seller/store" />}>
-            <LayoutDashboard aria-hidden /> My store
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>
+            <span className="block truncate font-medium text-foreground">
+              {fullName || "Unimate member"}
+            </span>
+            <span className="block truncate font-normal">{email}</span>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem render={<Link href="/settings" />}>
+            <Settings aria-hidden /> Settings
           </DropdownMenuItem>
-        ) : null}
-        {role === "admin" ? (
-          <DropdownMenuItem render={<Link href="/admin/users" />}>
-            <Shield aria-hidden /> Admin panel
-          </DropdownMenuItem>
-        ) : null}
+          {role === "buyer" ? (
+            <DropdownMenuItem render={<Link href="/become-seller" />}>
+              <BadgePlus aria-hidden /> Become a seller
+            </DropdownMenuItem>
+          ) : null}
+          {role === "seller" ? (
+            <DropdownMenuItem render={<Link href="/seller/store" />}>
+              <LayoutDashboard aria-hidden /> My store
+            </DropdownMenuItem>
+          ) : null}
+          {role === "admin" ? (
+            <DropdownMenuItem render={<Link href="/admin/users" />}>
+              <Shield aria-hidden /> Admin panel
+            </DropdownMenuItem>
+          ) : null}
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => void signOutAction()}>
           <LogOut aria-hidden /> Sign out

@@ -43,12 +43,15 @@ Two hardcoded Super Admins (`SUPER_ADMIN_EMAILS`) can never be demoted.
 src/
   app/                      Next.js App Router routes (pages, layouts, route handlers)
     (auth)/                 Centered auth shell — login, signup, recovery, change-password, banned
-    (protected)/            Signed-in shell with REAL guards — settings, admin (grows each phase)
+    (protected)/            Signed-in shell with REAL guards — settings, become-seller, seller,
+                            admin (grows each phase)
     auth/callback/          PKCE code exchange for every Supabase email link
-    layout.tsx              Root layout (fonts, theme provider, toaster)
+    store/[slug]/           PUBLIC storefront (hero entrance, listing grid, scroll reveals)
+    layout.tsx              Root layout (fonts, theme + motion providers, toaster)
     page.tsx                Landing (marketplace home arrives with the catalog phase)
   components/
     brand.tsx, theme-toggle.tsx, submit-button.tsx, user-menu.tsx, settings-tabs.tsx
+    admin-tabs.tsx, listing-card.tsx, store-hero.tsx, motion-provider.tsx
     ui/                     shadcn/ui components (Base UI based — do NOT assume Radix APIs,
                             and Base UI has NO asChild: use `render={<Link …/>}` +
                             `nativeButton={false}` for link-buttons)
@@ -109,6 +112,9 @@ docs/
 - Email-dependent flows need SMTP configured in the Supabase dashboard (no MCP/API path):
   see the Phase 2 report in docs/PROGRESS.md. `scripts/create-test-users.mjs` bypasses email
   entirely for development.
+- Motion: JS animation only through `m.*` under `LazyMotion strict` (motion-provider).
+  Named spring presets live in `src/lib/motion.ts` — never inline magic numbers. The one
+  signature moment is `store-live-reveal.tsx` (ADR-011); there must never be a second.
 - After any schema/policy change: re-run `supabase/tests/rls_checklist.sql` and the Supabase
   advisors. Accepted advisor findings are listed in docs/DECISIONS.md ADR-009 — do not
   "fix" the accepted items without reading that first.
