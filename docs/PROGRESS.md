@@ -2,14 +2,14 @@
 
 > Living document. Updated at the END of every phase, before the user is asked to test.
 > A phase is **DONE** only when all three gates are green and the user confirms the manual
-> test. Current phase: **awaiting user test of Phase 0**.
+> test. Current phase: **awaiting user test of Phase 1**.
 
 ## Phase overview
 
 | # | Phase | Status | Gate evidence |
 | --- | --- | --- | --- |
-| 0 | Pre-flight, scaffold, Supabase wiring, docs | **Awaiting user test** | See below |
-| 1 | Database schema, RLS, storage buckets, seed | Not started | — |
+| 0 | Pre-flight, scaffold, Supabase wiring, docs | **DONE — user proceeded** | ✅ type-check / lint / build |
+| 1 | Database schema, RLS, storage buckets, seed | **Awaiting user test** | See Phase 1 section |
 | 2 | Auth: domain restriction, super-admin bootstrap, invite/direct-create, password flows | Not started | — |
 | 3 | Roles, seller requests, stores, store pages | Not started | — |
 | 4 | Listings: create/edit with photos, browse, search, filters, product page | Not started | — |
@@ -74,3 +74,63 @@
   API → service_role) must be pasted by the user into `.env.local`.
 - **Blocker for Phase 2:** SMTP credentials for Supabase Auth (user provides).
 - Phase 1 will drop nothing — the new project is empty; all 15 tables arrive as migrations.
+
+---
+
+## Phase 1 — Database schema, RLS, storage & seed — 2026-10-18
+
+### Built
+
+- **10 migration files** in `supabase/migrations/` applied to project `unimate-purple`
+  (`jleztdtwkctvuogaechh`). 16 tables, every one with RLS enabled:
+  `profiles`, `notifications`, `invited_emails`, `stores`, `seller_requests`, `categories`,
+  `listings`, `listing_images`, `saved_items`, `conversations`, `messages`, `deals`,
+  `payments`, `reports`, `admin_audit_log` — plus the `public_profiles` view.
+- **Auth guards live in the database** (the UI check is defense-in-depth, never the control):
+  signup-domain trigger (`@eastdelta.edu.bd` + super admins + invited emails only),
+  profile-bootstrap trigger (super admin → `admin`, invited email → invited role,
+  everyone else → `buyer`), role/ban protection triggers, super-admin delete protection,
+  `ensure_super_admin()` login bootstrap.
+- **Business rules enforced in SQL:** seller-request approval atomically promotes the role,
+  creates the store (unique slug) and notifies; deal state machine with per-actor
+  transitions and payment-mode rules; payment success → deal `paid`; deal completion →
+  listing `sold` / quantity decrement / `sold_out`; messages immutable (only `read_at`
+  changes); max 8 photos per listing; append-only audit log.
+- **Storage buckets**: `listing-images`, `avatars`, `store-assets` — public read,
+  owner-folder writes only (`{bucket}/{uid}/…`), images only, max 5 MB/file.
+- **Seed**: 11 campus categories (mirrored in `supabase/seed.sql`).
+- **Hardening** driven by the security advisor + checklist findings (see ADR-007/008/009).
+- Realtime publication enabled for `messages`, `conversations`, `notifications` (Phase 6).
+
+### Gate evidence (run 2026-10-18)
+
+| Gate | Method | Result |
+| --- | --- | --- |
+| Migrations | Supabase MCP `apply_migration` × 11, in order | ✅ success |
+| RLS acceptance checklist | `supabase/tests/rls_checklist.sql` — 17 checks | ✅ **17/17 pass** |
+| Post-hardening regression | Smoke script: approval → store → role → notify; RLS insert + block; deal → sold | ✅ **7/7 pass** |
+| `npm run type-check` | local | ✅ pass |
+| `npm run lint` | local | ✅ pass |
+| `npm run build` | local | ✅ pass |
+| Security advisor (pre-hardening run) | Supabase advisor | 1 ERROR + 5 WARNs — all accepted & documented (ADR-009) |
+| Advisor re-run (after migration 11) | Supabase advisor | ✅ security: only the accepted findings (ADR-009); performance: only `unused_index` INFO (expected on an empty DB) |
+
+### How to verify manually (for the user)
+
+1. Supabase dashboard → **Table editor**: 16 tables exist. `categories` shows **11 rows**;
+   other tables are empty — every test creates its users/data inside a transaction that
+   rolls back, so nothing fake is left behind.
+2. Dashboard → **Storage**: the 3 buckets exist, marked public.
+3. Dashboard → **SQL editor**: paste `supabase/tests/rls_checklist.sql` and run. Expected:
+   one error message `RLS CHECKLIST — 0 failure(s)` followed by 17 `PASS` lines. (Safe —
+   the script rolls itself back.)
+
+### Notes / carry-forward
+
+- **Types generated**: `src/types/database.ts` (from the live schema) and all three Supabase
+  clients wired with the `Database` generic. Regenerate via `generate_typescript_types` after
+  any migration.
+- `supabase/seed.sql` intentionally seeds categories only; demo listings arrive in Phase 4
+  alongside the listing UI.
+- Changing the super-admin pair requires a migration edit to `public.super_admin_emails()`
+  **and** `SUPER_ADMIN_EMAILS` in env — both must stay in sync (ADR-007).

@@ -55,7 +55,11 @@ src/
       proxy.ts              Session refresh helper (getAll/setAll cookie pattern)
   proxy.ts                  Next 16 Proxy (formerly middleware.ts) — session refresh only
 supabase/
-  migrations/               Ordered SQL migrations (Phase 1+) — schema lives HERE, not in a dashboard
+  migrations/               Ordered SQL migrations — schema lives HERE, never ad-hoc dashboard
+                            edits. Phase-1 freeze ended at migration 10; append-only from now on.
+  seed.sql                  Idempotent seed (categories). Demo listings arrive in Phase 4.
+  tests/rls_checklist.sql   Canonical 17-check RLS proof. Re-run after ANY schema/policy change.
+                            Safe: creates throwaway users and rolls everything back.
 docs/
   PROGRESS.md               Phase status, gate evidence, manual test steps
   DECISIONS.md              Architecture decisions with reasoning (ADR-style)
@@ -90,6 +94,9 @@ docs/
 - The service-role key is used ONLY in server actions/route handlers via `createAdminClient()`,
   and every call site checks authorization first.
 - Schema changes = new file in `supabase/migrations/`, applied in order. No dashboard edits.
+- After any schema/policy change: re-run `supabase/tests/rls_checklist.sql` and the Supabase
+  advisors. Accepted advisor findings are listed in docs/DECISIONS.md ADR-009 — do not
+  "fix" the accepted items without reading that first.
 
 ## Environment variables
 

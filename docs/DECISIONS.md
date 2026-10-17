@@ -101,3 +101,68 @@ for zero runtime benefit.
 
 **Reversal.** Re-run `npm audit` when shadcn/next release patched dependency trees; upgrade
 then. Never run `npm audit fix --force`.
+
+---
+
+## ADR-007 — Migration policy + the two security bugs the RLS checklist caught (2026-10-18)
+
+**Decision.**
+1. **Migration policy.** From Phase 1 completion onward, migration files are strict
+   append-only history; corrections ship as new files. During the Phase 1 build-up
+   (pre-freeze) three corrective migrations were folded back into the numbered files so a
+   fresh `supabase db reset` produces the final shape directly; the live database's
+   applied history is that superset. Applied chain: `core_platform` → `seller_requests_stores`
+   → `catalog_listings` → `social_messaging` → `deals_payments` → `reports_audit_storage`
+   → `seed_categories` → `harden_super_admin` → `fix_trigger_guard_self_bootstrap` →
+   `mark_super_admin_helpers_stable` → `advisor_hardening` → `advisor_indexes_policies`.
+2. **Canonical security proof.** `supabase/tests/rls_checklist.sql` — 17 checks that create
+   throwaway users, assume `authenticated`/`anon` roles with forged JWT claims, attempt the
+   forbidden operations, and roll everything back. **Re-run after any schema/policy change.**
+
+**Bugs it caught (both fixed before any UI existed):**
+- `ensure_super_admin(p_emails)` accepted the super-admin list as a caller argument — any
+  authenticated user could promote themselves via RPC. Fixed: no-arg function; the SQL list
+  is the only source of truth.
+- A protection-trigger bypass keyed on `current_user = 'postgres'` silently disabled the
+  role guard for everyone — inside a SECURITY DEFINER function, `current_user` is always
+  the function owner. Fixed: one narrowly-scoped self-bootstrap rule evaluated purely from
+  JWT claims + stored email; identical behaviour in tests and production, no hidden context
+  detection.
+
+---
+
+## ADR-008 — Config helpers are STABLE, never IMMUTABLE (2026-10-18)
+
+**Decision.** `super_admin_emails()`, `is_super_admin_email()` and `allowed_email_domain()`
+are `STABLE`.
+
+**Why.** PostgreSQL constant-folds `IMMUTABLE` results into the cached plans of calling
+functions. With pooled connections, editing the super-admin list (a migration away) could
+stay invisible to sessions holding pre-change plans — reproduced in testing when an
+in-transaction helper swap was ignored by an already-cached plan. `STABLE` evaluates per
+execution and cannot be folded.
+
+**Scope.** `slugify()` stays `IMMUTABLE` — it is a pure text function with no config input.
+
+---
+
+## ADR-009 — Accepted Supabase advisor findings (2026-10-18)
+
+**Accepted, with reasons:**
+- `security_definer_view` ERROR on `public.public_profiles`: the view exists precisely to
+  expose the safe column subset (`id, full_name, avatar_url, bio, role, created_at`) of
+  every profile to everyone while the table keeps phone/bans/`must_change_password` private
+  via RLS. Switching it to `security_invoker` would make it useless for public pages.
+- RPC-executable `is_admin()` / `is_banned()` (anon + authenticated): required by RLS policy
+  expressions; they return only booleans about the calling user.
+- RPC-executable `ensure_super_admin()` (authenticated): the single intentional RPC — it can
+  only ever promote the caller and only when the caller's own email is on the hardcoded list.
+- `unused_index` INFO ×21: expected on an empty database.
+
+**Fixed instead of accepted:** 7× missing `search_path` pins; ~20 internal trigger functions
+exposed at `/rest/v1/rpc/*` (EXECUTE revoked from anon/authenticated); 6× missing foreign-key
+indexes; the categories and payments double-policy overlaps (migrations 10–11).
+
+**Final advisor state (verified):** security = only the accepted findings above; performance =
+only `unused_index` INFO, expected on an empty database. Never blindly "fix" the accepted
+items above — read this ADR first.

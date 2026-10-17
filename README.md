@@ -4,7 +4,7 @@ A clean, modern marketplace for **East Delta University** students — browse an
 listings, message sellers in real time, and deal in **BDT (৳)**. Sellers get their own store
 page; admins run the platform from a full control panel.
 
-**Status:** 🚧 Under construction — Phase 0 of 11 complete (`docs/PROGRESS.md`).
+**Status:** 🚧 Under construction — Phase 1 of 11 built, awaiting user test (`docs/PROGRESS.md`).
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · shadcn/ui · Supabase
 (Postgres, Auth, Storage, Realtime, RLS) · Zod · React Hook Form · TanStack Query.
 

@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import { env } from "@/lib/env";
 import { serverEnv } from "@/lib/env.server";
+import type { Database } from "@/types/database";
 
 /**
  * Privileged Supabase client using the service-role key.
@@ -19,7 +20,7 @@ import { serverEnv } from "@/lib/env.server";
  * an admin") before using this client.
  */
 export function createAdminClient() {
-  return createClient(
+  return createClient<Database>(
     env.NEXT_PUBLIC_SUPABASE_URL,
     serverEnv().SUPABASE_SERVICE_ROLE_KEY,
     {
