@@ -166,3 +166,29 @@ indexes; the categories and payments double-policy overlaps (migrations 10–11)
 **Final advisor state (verified):** security = only the accepted findings above; performance =
 only `unused_index` INFO, expected on an empty database. Never blindly "fix" the accepted
 items above — read this ADR first.
+
+---
+
+## ADR-010 — Design direction & the three technical answers (2026-10-18)
+
+**Decision** (user-confirmed; system documented in `docs/DESIGN.md`):
+
+- **Art direction:** *Calm marketplace* — clean and trustworthy, generous whitespace, soft
+  rounded cards, ONE purple accent. Reference energy: Vinted × Linear. This supersedes the
+  ad-hoc styling of the scaffold.
+- **Dark mode:** light default, persisted toggle.
+- **3D scope:** opt-in WebGL hero — landing page only, lazy-loaded with a tested non-WebGL
+  fallback; never inside the logged-in product UI.
+- **Motion:** `motion` (React) used through `LazyMotion` + `m` with the `domAnimation`
+  bundle (≈15–20 KB gz instead of ≈34 KB) — springs where physics belongs, CSS elsewhere.
+- **JS budget:** visual layer ≤ ~30 KB gzipped, verified at each phase end; target device is
+  a mid-tier Android on campus wifi.
+- Accessibility target: WCAG AA.
+
+**Why.** The skill rules require art direction to be the user's choice, not an accumulation of
+library defaults — scaffolded-default UI reads as unfinished. The three technical answers
+carry real cost (bundle size, fallback testing) and are painful to reverse later, so they are
+recorded before the first screen is built.
+
+**Reversal.** Each answer is a token-level or dependency-level change; DESIGN.md is the single
+place to update.

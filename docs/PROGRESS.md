@@ -2,15 +2,15 @@
 
 > Living document. Updated at the END of every phase, before the user is asked to test.
 > A phase is **DONE** only when all three gates are green and the user confirms the manual
-> test. Current phase: **awaiting user test of Phase 1**.
+> test. Current phase: **awaiting user test of Phase 2**.
 
 ## Phase overview
 
 | # | Phase | Status | Gate evidence |
 | --- | --- | --- | --- |
-| 0 | Pre-flight, scaffold, Supabase wiring, docs | **DONE — user proceeded** | ✅ type-check / lint / build |
-| 1 | Database schema, RLS, storage buckets, seed | **Awaiting user test** | See Phase 1 section |
-| 2 | Auth: domain restriction, super-admin bootstrap, invite/direct-create, password flows | Not started | — |
+| 0 | Pre-flight, scaffold, Supabase wiring, docs | **DONE** | ✅ type-check / lint / build |
+| 1 | Database schema, RLS, storage buckets, seed | **DONE — user proceeded** | 17/17 RLS checks, advisors clean |
+| 2 | Auth: domain restriction, super-admin bootstrap, invite/direct-create, password flows | **Awaiting user test** | See Phase 2 section |
 | 3 | Roles, seller requests, stores, store pages | Not started | — |
 | 4 | Listings: create/edit with photos, browse, search, filters, product page | Not started | — |
 | 5 | Saved items, My Listings, sold/sold-out handling | Not started | — |
@@ -134,3 +134,64 @@
   alongside the listing UI.
 - Changing the super-admin pair requires a migration edit to `public.super_admin_emails()`
   **and** `SUPER_ADMIN_EMAILS` in env — both must stay in sync (ADR-007).
+
+---
+
+## Phase 2 — Auth, account security & admin user management — 2026-10-18
+
+### Built
+
+- **Design system live** (ADR-010 / `docs/DESIGN.md`): purple OKLCH token set, light default +
+  dark toggle (`next-themes` + CSS-only icon swap), two-part elevation utilities (`elev-1/2/3`),
+  motion tokens, global `prefers-reduced-motion` guard, one soft glow used on auth screens.
+- **Auth shell + screens** `(auth)/`: login, signup (live domain-rule validation), verify-email
+  (with resend), forgot-password, reset-password (session-gated), change-password
+  (forced-flow aware), banned screen.
+- **Server auth layer**: `src/lib/auth.ts` (`getAuthContext` cached per request, `requireUser`,
+  `requireAdmin`) — the real authorization checks; `src/proxy.ts` keeps doing session refresh only.
+- **Auth flows**: signup restricted to `@eastdelta.edu.bd` (UI zod + DB trigger; super-admin
+  emails exempt), email confirmation via PKCE `/auth/callback`, super-admin bootstrap RPC on
+  login, friendly error mapping, open-redirect guard (`sanitizeNextPath`).
+- **Account security** `(protected)/settings/security`: password change (re-verifies current
+  password first), secure email change (both-address confirmation copy), **TOTP 2FA**
+  (enroll QR → verify → disable; server-rendered factor state), sign-out-of-all-devices,
+  **account self-deletion** (password-confirmed, super-admin protected, audit-logged).
+- **Settings profile**: profile form (name/phone/bio), avatar upload — browser → Supabase
+  Storage (`avatars/{uid}/…`, storage-RLS enforced) → server action persists the URL.
+- **Admin → Users** (first slice; full panel in Phase 9): invite-by-email + direct-create with
+  temporary password (forces `must_change_password` on first login), audit-log entries for both,
+  members list with roles/bans/last-seen. Admin role options are Super-Admin-only (enforced in
+  UI **and** server action **and** DB trigger).
+- **DB hardening**: migration 12 — email-change domain guard (the signup rule now also applies
+  to post-signup email changes).
+- **Dev utility**: `scripts/create-test-users.mjs` — throwaway accounts via the admin API with
+  `email_confirm: true` (sends NO email); `--delete` cleans up.
+
+### Gate evidence (run 2026-10-18)
+
+| Gate | Method | Result |
+| --- | --- | --- |
+| `npm run type-check` | local | ✅ pass |
+| `npm run lint` | local | ✅ pass |
+| `npm run build` | local | ✅ pass — 13 routes |
+| Browser test (Puppeteer) | home, signup domain rejection (live error shown), unauthenticated `/settings` → 307 → `/login`, login as test admin → `/`, `/admin/users` (members list + forms render; Admin role option hidden for non-super admins), `/settings`, `/settings/security` light + dark | ✅ all pass, **0 dev-overlay issues** |
+| Emails sent during tests | — | **0** (admin API `email_confirm`, no real addresses touched) |
+
+### How to verify manually (for the user)
+
+1. http://localhost:3000 → **Sign in** with `test-admin@eastdelta.edu.bd` / `TestAdmin123`
+   (or the buyer experience: `test-buyer@eastdelta.edu.bd` / `TestBuyer123`).
+2. **Settings → Profile**: edit name/phone/bio, upload a photo, save.
+3. **Settings → Security**: change password, set up 2FA with an authenticator app, try
+   sign-out-of-all-devices; delete-account flow (you can back out before confirming).
+4. **Admin → Users**: try Create-with-password (no email needed). Invite-by-email saves the
+   invite but its email will fail until SMTP is configured — expected today.
+5. `/signup` with e.g. `someone@gmail.com` → rejected; toggle dark mode top-right.
+
+### SMTP / email — decision needed (see report)
+
+- `*.vercel.app` cannot be verified in Resend (no DNS control) — **Resend waits for a real
+  domain**. Free-for-now options: **Gmail SMTP app password** (recommended) or the
+  rate-limited Supabase sender. Dashboard steps in the phase report.
+- Until then: signup confirmation, reset links and invite emails will not deliver; the
+  **test accounts above bypass email entirely**, and admin *direct-create* needs no email.

@@ -42,27 +42,35 @@ Two hardcoded Super Admins (`SUPER_ADMIN_EMAILS`) can never be demoted.
 ```
 src/
   app/                      Next.js App Router routes (pages, layouts, route handlers)
-    layout.tsx              Root layout (fonts, metadata)
-    page.tsx                Home (placeholder until Phase 4)
-  components/ui/            shadcn/ui components (Base UI based — do NOT assume Radix APIs)
+    (auth)/                 Centered auth shell — login, signup, recovery, change-password, banned
+    (protected)/            Signed-in shell with REAL guards — settings, admin (grows each phase)
+    auth/callback/          PKCE code exchange for every Supabase email link
+    layout.tsx              Root layout (fonts, theme provider, toaster)
+    page.tsx                Landing (marketplace home arrives with the catalog phase)
+  components/
+    brand.tsx, theme-toggle.tsx, submit-button.tsx, user-menu.tsx, settings-tabs.tsx
+    ui/                     shadcn/ui components (Base UI based — do NOT assume Radix APIs,
+                            and Base UI has NO asChild: use `render={<Link …/>}` +
+                            `nativeButton={false}` for link-buttons)
   lib/
-    env.ts                  Public env (NEXT_PUBLIC_*) validated with Zod — client-safe
-    env.server.ts           Server-only env (service role key, super admin emails)
-    supabase/
-      client.ts             Browser client (Client Components)
-      server.ts             Server client (Server Components / Actions / Route Handlers)
-      admin.ts              Service-role client — BYPASSES RLS, server-only, guard every use
-      proxy.ts              Session refresh helper (getAll/setAll cookie pattern)
+    auth.ts                 getAuthContext (cached), requireUser, requireAdmin — real guards
+    constants.ts            Shared mirrors (domain, super admins) — keep in sync with env + SQL
+    urls.ts                 siteUrl + sanitizeNextPath (open-redirect guard)
+    validation/             Zod schemas (auth.ts) + ActionState helpers (helpers.ts)
+    supabase/               client / server / admin / proxy helpers
   proxy.ts                  Next 16 Proxy (formerly middleware.ts) — session refresh only
 supabase/
   migrations/               Ordered SQL migrations — schema lives HERE, never ad-hoc dashboard
-                            edits. Phase-1 freeze ended at migration 10; append-only from now on.
+                            edits. Append-only (ADR-007).
   seed.sql                  Idempotent seed (categories). Demo listings arrive in Phase 4.
   tests/rls_checklist.sql   Canonical 17-check RLS proof. Re-run after ANY schema/policy change.
-                            Safe: creates throwaway users and rolls everything back.
+scripts/
+  create-test-users.mjs     Throwaway accounts via admin API, email_confirm → sends NO email.
+                            `node scripts/create-test-users.mjs [--delete]`
 docs/
-  PROGRESS.md               Phase status, gate evidence, manual test steps
+  PROGRESS.md               Phase status, gate evidence, manual test steps + test credentials
   DECISIONS.md              Architecture decisions with reasoning (ADR-style)
+  DESIGN.md                 Design system (art direction, tokens, motion, budget)
 ```
 
 ## Commands
@@ -94,6 +102,13 @@ docs/
 - The service-role key is used ONLY in server actions/route handlers via `createAdminClient()`,
   and every call site checks authorization first.
 - Schema changes = new file in `supabase/migrations/`, applied in order. No dashboard edits.
+- Every Server Action re-checks authorization itself — page guards are never enough.
+- File uploads go **browser → Supabase Storage directly** (storage RLS enforces the owner
+  folder), then a server action persists the public URL. Never route large files through
+  Server Action bodies (1 MB limit by default).
+- Email-dependent flows need SMTP configured in the Supabase dashboard (no MCP/API path):
+  see the Phase 2 report in docs/PROGRESS.md. `scripts/create-test-users.mjs` bypasses email
+  entirely for development.
 - After any schema/policy change: re-run `supabase/tests/rls_checklist.sql` and the Supabase
   advisors. Accepted advisor findings are listed in docs/DECISIONS.md ADR-009 — do not
   "fix" the accepted items without reading that first.
