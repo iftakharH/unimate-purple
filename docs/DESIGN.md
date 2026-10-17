@@ -32,6 +32,22 @@ cards and ONE purple accent. Reference energy: Vinted (marketplace clarity) × L
 - Semantic tokens: success / warning / destructive / info — never colour alone to convey state.
 - Dark mode: designed, not inverted — lower chroma, elevate with surface lightness plus a 1px lit top edge (shadows do not read on dark).
 
+### Generated colour (ADR-012)
+
+Anything colourful beyond the tokens is **generated, never hand-picked** — one rule set in
+`src/lib/colors.ts`:
+
+- **Curated partner hues** `[262, 240, 210, 330, 165, 45]` — cyan/blue/rose/green/amber chosen
+  against brand violet (292). No component invents a hue.
+- **Deterministic per entity**: `hueForStore(slug)` (252–319° only), `categoryHues(slug)`,
+  `listingHues(id)` — same input → same colour, so nothing shifts between renders.
+- **AmbientBackdrop** (`.ambient-backdrop` + drift + grain, `src/components/ambient-backdrop.tsx`):
+  three layered radial fields behind public pages; hue pair passed per page; dark mode has its own
+  (lower lightness/chroma) values. Intensity raised once on user feedback (2026-10-18).
+- **Placeholder tinting**: duotone gradients use alpha over the theme background — soft on light,
+  muted on dark, from one definition.
+- The listing grid therefore glows with per-item variety while every hue stays brand-adjacent.
+
 ## Space, radius, depth
 
 - Spacing: 4-based scale — 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64.

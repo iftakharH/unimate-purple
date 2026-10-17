@@ -216,3 +216,66 @@ keeps it from reading as amateur; the moments are what make it memorable.
 
 **Reversal.** Motion intensity dials via `src/lib/motion.ts` presets and the reveal component;
 documented in DESIGN.md.
+
+---
+
+## ADR-012 — One colour-generation system; ambient colour fields (2026-10-18)
+
+**Decision.** The user asked for a more colourful, engaging page background. The crafted
+answer (not rainbow gradients — that is the slop failure mode): every generated colour in the
+product comes from **one rule set**, `src/lib/colors.ts`:
+
+- **Curated partner palette** — six hues (262, 240, 210, 330, 165, 45) chosen as partners of
+  the brand violet (292). Components never hand-pick a hue.
+- **Deterministic per entity** — store banners, category tiles and listing-card placeholders
+  hash from slug/id → same colour every render, no hydration risk, stable identity.
+- **`AmbientBackdrop`** — three layered radial colour fields + 26 s transform-only drift +
+  grain, hues passed from the page, *dark mode designed separately* (lower lightness/chroma,
+  not inverted). Applied to home, browse, listing; the height is per-page.
+- **Placeholders** tint with alpha over the theme background so they read soft in light and
+  muted in dark without a second colour table.
+- Intensity was raised once on user feedback (chroma ↑ ~35 %, alpha ↑ ~15 %) — still a wash,
+  not a neon flood.
+
+**Why.** "Colourful" and "premium" pull in opposite directions unless the colour is *systematic*.
+A generated-but-curated palette keeps the brand reading as one product while every surface still
+glows with variety — and the rule set means Phase 5+ surfaces get colour for free, consistently.
+
+**Reversal.** All of it lives in `src/lib/colors.ts` and the `.ambient-backdrop` block in
+`globals.css`; tone down by editing those two places.
+
+---
+
+## ADR-013 — Listing photos upload on pick; orphan files accepted for now (2026-10-18)
+
+**Decision.** Photos are uploaded **browser → Supabase Storage the moment they are chosen**
+(`listing-images/{uid}/…`, enforced by storage RLS), shown as preview tiles, and only the final
+ordered URL list is persisted with the listing on submit. Abandoning the form can leave orphaned
+files in Storage — accepted at campus scale, cleanup job deferred. Edit and delete **do** clean
+up: removed/withdrawn URLs are parsed back to storage paths and removed best-effort.
+
+**Why.** The alternatives lose: (a) upload-on-submit needs a listing id first → a two-phase flow
+with a half-created listing on any failure; (b) routing file bodies through a Server Action hits
+the 1 MB body limit and copies every byte twice; (c) the project convention is already
+"browser → Storage directly" (AGENTS.md). Preview-on-pick is also simply better UX.
+
+**Reversal.** A `storage.objects` sweep for files whose URL appears in no `listing_images` row
+restores hygiene later without changing any client flow.
+
+---
+
+## ADR-014 — Browse state lives in the URL; classic pagination over infinite scroll (2026-10-18)
+
+**Decision.** Every browse filter (q, category, condition, min, max, sort, store, page) is a
+**search param**, read server-side (SSR, no client fetch loop); the filter bar writes the URL
+with `router.replace` (debounced search). Pagination is classic 24-per-page Prev/Next with a
+total count and "page X of Y" — not infinite scroll.
+
+**Why.** URL state makes every filtered view shareable, bookmarkable, back-button-correct and
+works signed-out; the server renders fully, so there is no loading-spinner waterfall and no
+extra JS. Classic pagination is honest about totals (useful for a marketplace) and trivial to
+verify; infinite scroll adds JS, loses position on Back, and hides the total. Revisit only if
+campus listings outgrow a few hundred.
+
+**Reversal.** Swap the grid for a client fetch + sentinel when traffic justifies it; the URL
+grammar stays identical.

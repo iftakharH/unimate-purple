@@ -275,3 +275,46 @@
     transform: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Ambient backdrop — layered colour fields behind public pages.
+   Hues come from src/lib/colors.ts via --ab-hue-a / --ab-hue-b.
+   Dark mode lowers lightness + chroma (designed, not inverted) and the
+   grain layer on top kills gradient banding.
+   -------------------------------------------------------------------------- */
+.ambient-backdrop {
+  background-image:
+    radial-gradient(
+      45% 60% at 15% 0%,
+      oklch(0.84 0.15 var(--ab-hue-a) / 0.6),
+      transparent 70%
+    ),
+    radial-gradient(
+      40% 55% at 85% 8%,
+      oklch(0.87 0.13 var(--ab-hue-b) / 0.55),
+      transparent 70%
+    ),
+    radial-gradient(
+      62% 72% at 50% -12%,
+      oklch(0.88 0.09 var(--ab-hue-a) / 0.5),
+      transparent 75%
+    );
+}
+.dark .ambient-backdrop {
+  background-image:
+    radial-gradient(
+      45% 60% at 15% 0%,
+      oklch(0.45 0.15 var(--ab-hue-a) / 0.6),
+      transparent 70%
+    ),
+    radial-gradient(
+      40% 55% at 85% 8%,
+      oklch(0.43 0.13 var(--ab-hue-b) / 0.55),
+      transparent 70%
+    ),
+    radial-gradient(
+      62% 72% at 50% -12%,
+      oklch(0.4 0.1 var(--ab-hue-a) / 0.5),
+      transparent 75%
+    );
+}

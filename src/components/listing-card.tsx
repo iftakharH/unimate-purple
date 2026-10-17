@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { listingHues } from "@/lib/colors";
 import { formatBdt, initialsOf } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -15,20 +16,23 @@ export type CardListing = {
 };
 
 /**
- * Shared listing card. Hover lift is CSS-only (transform + shadow) — cheap,
- * interruptible, and off the JavaScript budget. Reused by the store page now
- * and the browse/home grids in Phase 4.
+ * Shared listing card. Hover lift is CSS-only (transform + shadow); the
+ * no-photo placeholder gets a deterministic duotone from src/lib/colors.ts so
+ * the grid is colourful yet always on-brand. Used by home, browse and store.
  */
 export function ListingCard({
   listing,
+  storeName,
   className,
 }: {
   listing: CardListing;
+  storeName?: string | null;
   className?: string;
 }) {
   const image = [...listing.listing_images].sort(
     (a, b) => a.position - b.position,
   )[0];
+  const { a, b } = listingHues(listing.id);
 
   return (
     <Link
@@ -38,7 +42,7 @@ export function ListingCard({
         className,
       )}
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-accent/60">
+      <div className="relative aspect-[4/3] overflow-hidden bg-muted/60">
         {image ? (
           <Image
             src={image.url}
@@ -48,8 +52,13 @@ export function ListingCard({
             className="object-cover transition-transform duration-slow ease-out-soft group-hover:scale-[1.04]"
           />
         ) : (
-          <div className="grid size-full place-items-center">
-            <span className="text-3xl font-semibold text-primary/50">
+          <div
+            className="grid size-full place-items-center"
+            style={{
+              backgroundImage: `linear-gradient(135deg, oklch(0.8 0.1 ${a} / 0.5), oklch(0.82 0.1 ${b} / 0.45))`,
+            }}
+          >
+            <span className="text-3xl font-semibold text-foreground/25">
               {initialsOf(listing.title)}
             </span>
           </div>
@@ -76,6 +85,9 @@ export function ListingCard({
         <p className="tabular text-base font-semibold">
           {formatBdt(listing.price_bdt)}
         </p>
+        {storeName ? (
+          <p className="truncate text-xs text-muted-foreground">{storeName}</p>
+        ) : null}
       </div>
     </Link>
   );

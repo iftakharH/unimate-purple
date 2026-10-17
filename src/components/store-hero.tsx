@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Calendar, MapPin, Package } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { hueForStore } from "@/lib/colors";
 import { formatDate, initialsOf } from "@/lib/format";
 import { spring, staggerParent, bannerItem, riseItem } from "@/lib/motion";
 
@@ -19,21 +20,13 @@ export type StoreHeroData = {
   listingCount: number;
 };
 
-/** Deterministic hue per store — constrained to the brand's violet→indigo
- *  family (252–319°) so every store is distinct yet always on-brand. */
-function hueFromSlug(slug: string): number {
-  let hash = 7;
-  for (const char of slug) hash = (hash * 31 + char.charCodeAt(0)) % 97;
-  return 252 + (hash % 68);
-}
-
 /**
  * The store page entrance: ONE orchestrated sequence (parent drives,
  * children stagger ≤6 items, total ≈650ms). Above-the-fold entrance is the
  * single allowed exception in the product UI (docs/DESIGN.md).
  */
 export function StoreHero({ store }: { store: StoreHeroData }) {
-  const hue = hueFromSlug(store.slug);
+  const hue = hueForStore(store.slug);
 
   return (
     <m.div

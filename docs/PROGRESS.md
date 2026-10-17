@@ -2,7 +2,7 @@
 
 > Living document. Updated at the END of every phase, before the user is asked to test.
 > A phase is **DONE** only when all three gates are green and the user confirms the manual
-> test. Current phase: **awaiting user test of Phase 3**.
+> test. Current phase: **awaiting user test of Phase 4**.
 
 ## Phase overview
 
@@ -11,8 +11,8 @@
 | 0 | Pre-flight, scaffold, Supabase wiring, docs | **DONE** | ✅ type-check / lint / build |
 | 1 | Database schema, RLS, storage buckets, seed | **DONE — user proceeded** | 17/17 RLS checks, advisors clean |
 | 2 | Auth: domain restriction, super-admin bootstrap, invite/direct-create, password flows | **DONE — user proceeded** | 13 routes, browser-verified, 0 emails sent |
-| 3 | Roles, seller requests, stores, store pages | **Awaiting user test** | See Phase 3 section |
-| 4 | Listings: create/edit with photos, browse, search, filters, product page | Not started | — |
+| 3 | Roles, seller requests, stores, store pages | **DONE — user proceeded** | See Phase 3 section |
+| 4 | Listings: create/edit with photos, browse, search, filters, product page | **Awaiting user test** | See Phase 4 section |
 | 5 | Saved items, My Listings, sold/sold-out handling | Not started | — |
 | 6 | Realtime chat + notifications | Not started | — |
 | 7 | Deals tracker + mock payment | Not started | — |
@@ -255,3 +255,79 @@
   Phase 4 — store cards link there already.
 
 ### SMTP / email — still pending the user's provider choice (see Phase 2 section)
+
+---
+
+## Phase 4 — Listings, browse & the colour system — 2026-10-18
+
+### Built
+
+- **The real home page** `/`: ambient colour-field hero, live stats (listings/stores),
+  "Shop by category" rail, "Fresh on campus" grid (8 latest), seller CTA for non-sellers.
+- **Colour generation system** (`src/lib/colors.ts` + ADR-012/013): every generated colour in
+  the product comes from one curated rule set — deterministic store banners (violet→indigo),
+  **category duotones** (curated partner hues), **listing-card duotone placeholders**,
+  `AmbientBackdrop` layered colour fields with slow drift + grain (dark-mode aware, per-page
+  hue variants). Category tiles are colourful; the grid glows with variety; still one brand.
+- **Browse** `/browse`: URL-synced everything — search `q` (debounced), category, condition
+  (All/New/Used segmented), price min/max, sort (newest / price ↑ / price ↓), optional
+  `store=` chip, classic pagination (24/page, Prev/Next, count). Public, works signed-out.
+- **Listing detail** `/listing/[id]`: photo gallery (crossfade, arrows, thumbnails, keyboard
+  ←/→, counter), price/condition/title card, description, detail chips (qty, category link,
+  pickup, posted date), **seller card** (store logo + link, seller name/avatar, verified mark),
+  **Save** (heart, real saved_items toggle, optimistic), **Report listing** (inline disclosure,
+  reasons, stored in `reports`), owner/admin see Edit + Manage; non-active listings show a
+  status banner.
+- **Seller listings**: seller area now has tabs (**My listings | My store**). `/seller/listings`
+  (all statuses, cover thumbs, Edit/View), `/seller/listings/new`, `/seller/listings/[id]/edit`
+  with **photo manager** — pick files (uploaded straight to Storage from the browser, progress
+  state), **drag to reorder** + keyboard-accessible move buttons, remove, first photo = Cover,
+  max 8/5 MB. Create → success banner on the live listing; edit → sync (removed photos are
+  deleted from Storage too); delete → inline confirm, Storage cleanup.
+- **Server actions with full validation** (`listingSchema`, `listingImagesSchema`) + ownership
+  checks; image URLs are verified to live in the caller's own storage folder (defense in depth
+  over storage RLS).
+- **Shared `PublicHeader`** on home/browse/listing pages (Brand, Browse, Sell for sellers,
+  theme, user menu).
+
+### Gate evidence (run 2026-10-18)
+
+| Gate | Method | Result |
+| --- | --- | --- |
+| `npm run type-check` / `lint` / `build` | local | ✅ / ✅ / ✅ (22 routes) |
+| Create listing with **real photo upload** (Puppeteer) | injected a real file into the input → Storage upload → preview "1/8 · Cover" → publish → redirect `/listing/…?created=1` + "Your listing is live" banner | ✅ pass |
+| Edit listing | swapped the photo (canvas-generated image) + fixed quantity → saved → DB shows 1 image row (new URL), old file cleaned up, quantity 1 | ✅ pass |
+| Save toggle | click → "Saved", `aria-pressed=true`, toast "Saved to your list."; DB row in `saved_items` | ✅ pass |
+| Browse search | typed "ipad" → URL `?q=ipad&sort=newest` after debounce → 1 result, correct item | ✅ pass |
+| Storefront regression | `/store/rafi-s-tech-corner` → 5 cards → click card → listing detail opens | ✅ pass |
+| Design check | home + browse captured light & dark; ambient backdrop visibly richer in both | ✅ pass |
+| Emails sent during tests | — | **0** |
+
+### How to verify manually (for the user)
+
+1. **Home** http://localhost:3000 — the colour fields drift slowly behind the hero; hover the
+   category tiles and the listing cards. Toggle dark mode: the backdrop is designed for both.
+2. **Browse** — http://localhost:3000/browse. Try: search "laptop", filter New/Used, set price
+   min/max + Apply, sort by price, click a category tile. Watch the URL change with every
+   filter — shareable links, and Back works.
+3. **A listing** — open any card (e.g. the seeded "TI-84 Plus CE"). Gallery arrows/thumbnails/
+   keyboard, Save (heart) → check it flips to "Saved", Report listing folds out.
+4. **Sell something** (as `test-buyer@eastdelta.edu.bd` / `TestBuyer123`, a seller):
+   Header **Sell** → New listing → add 2-3 photos (drag to reorder!), fill fields, Publish →
+   land on the live listing. Then **My listings** → Edit → swap a photo, delete the listing if
+   you want (inline confirm).
+5. **Admin note**: admins see Edit/Manage on any listing.
+
+### Notes / carry-forward
+
+- **"Message seller" and "Make an offer" are deliberately disabled** with a caption ("switch
+  on with the chat & deals phase") — dead links would be worse. They light up in Phase 6/7.
+- **Saved items page** (`/saved`), **sold / sold-out / relist management** and richer My
+  Listings controls are Phase 5 (spec order) — the Save button already stores data.
+- **Photo pipeline trade-off** (ADR-013): files upload the moment they're picked, so abandoning
+  the form can leave orphaned files in Storage. Small at campus scale; a cleanup job is noted
+  for a later phase. Edit/delete clean up properly.
+- If the dev browser sits idle for a long time, the Supabase session can expire mid-testing
+  (refresh-token rotation) — sign in again; nothing is lost.
+- New demo data: "iPad 9th Gen — 64GB WiFi, with Pencil" (৳28,500, with a real photo) created
+  through the UI as test-buyer, alongside the 4 seeded listings.

@@ -43,23 +43,32 @@ Two hardcoded Super Admins (`SUPER_ADMIN_EMAILS`) can never be demoted.
 src/
   app/                      Next.js App Router routes (pages, layouts, route handlers)
     (auth)/                 Centered auth shell — login, signup, recovery, change-password, banned
-    (protected)/            Signed-in shell with REAL guards — settings, become-seller, seller,
-                            admin (grows each phase)
+    (protected)/            Signed-in shell with REAL guards — settings, become-seller,
+                            seller (store editor + listings CRUD), admin (grows each phase)
     auth/callback/          PKCE code exchange for every Supabase email link
+    browse/                 PUBLIC catalog — URL-synced search/filters/sort/pagination
+    listing/[id]/           PUBLIC listing page — gallery, save, report (actions.ts)
     store/[slug]/           PUBLIC storefront (hero entrance, listing grid, scroll reveals)
     layout.tsx              Root layout (fonts, theme + motion providers, toaster)
-    page.tsx                Landing (marketplace home arrives with the catalog phase)
+    page.tsx                Marketplace home — ambient hero, category rail, latest listings
   components/
     brand.tsx, theme-toggle.tsx, submit-button.tsx, user-menu.tsx, settings-tabs.tsx
-    admin-tabs.tsx, listing-card.tsx, store-hero.tsx, motion-provider.tsx
+    admin-tabs.tsx, seller-tabs.tsx, public-header.tsx, motion-provider.tsx
+    ambient-backdrop.tsx    Ambient colour fields (hues from lib/colors.ts)
+    category-rail.tsx       Colourful category tiles (deterministic duotones)
+    listing-card.tsx        Shared card — duotone placeholder when no photo
+    store-hero.tsx          Storefront hero (deterministic brand-family banner hue)
     ui/                     shadcn/ui components (Base UI based — do NOT assume Radix APIs,
                             and Base UI has NO asChild: use `render={<Link …/>}` +
                             `nativeButton={false}` for link-buttons)
   lib/
     auth.ts                 getAuthContext (cached), requireUser, requireAdmin — real guards
+    colors.ts               Colour generation rules — ALL generated hues come from here
+    format.ts               formatBdt / formatDate / initialsOf
+    motion.ts               Named spring presets + variants (m.* only, LazyMotion strict)
     constants.ts            Shared mirrors (domain, super admins) — keep in sync with env + SQL
     urls.ts                 siteUrl + sanitizeNextPath (open-redirect guard)
-    validation/             Zod schemas (auth.ts) + ActionState helpers (helpers.ts)
+    validation/             Zod schemas (auth.ts, listing.ts) + ActionState helpers
     supabase/               client / server / admin / proxy helpers
   proxy.ts                  Next 16 Proxy (formerly middleware.ts) — session refresh only
 supabase/
