@@ -2,7 +2,7 @@
 
 > Living document. Updated at the END of every phase, before the user is asked to test.
 > A phase is **DONE** only when all three gates are green and the user confirms the manual
-> test. Current phase: **awaiting user test of Phase 9**.
+> test. Current phase: **awaiting user test of Phase 10 — the last one**.
 
 ## Phase overview
 
@@ -17,7 +17,8 @@
 | 6 | Realtime chat + notifications; glass navbar; kinetic landing | **DONE — user proceeded** | See Phase 6 section |
 | 7 | Deals tracker + mock payment (both completion paths) | **DONE — user proceeded** | See Phase 7 section |
 | 8 | Profiles & account pages | **DONE — user proceeded** | See Phase 8 section |
-| 9 | Admin panel with audit log | **Awaiting user test** | See Phase 9 section |
+| 9 | Admin panel with audit log | **DONE — user proceeded** | See Phase 9 section |
+| 10 | Responsive polish, error/empty/loading states, README + deployment guide | **Awaiting user test** | See Phase 10 section |
 | 8 | Profiles and account pages | Not started | — |
 | 9 | Admin panel + audit log | Not started | — |
 | 10 | Responsive polish, README/deploy guide, final verification | Not started | — |
@@ -696,3 +697,68 @@
   mid-build) — the E2E restored `test-buyer` to seller.
 - Phase 10 (the spec's last): responsive polish, error/empty/loading states, README and
   deployment guide.
+
+---
+
+## Phase 10 — Responsive polish, states, README + deployment guide — 2026-10-18
+
+### Built
+
+- **Responsive audit** — every key surface verified at an **extreme 240px viewport**
+  (narrower than the 360px spec minimum) with zero horizontal overflow: landing,
+  browse (filters wrap), listing, store, deals, messages, saved, profile, admin, audit,
+  login/signup. Admin tabs scroll horizontally by design at narrow widths; the glass pill
+  keeps every icon at 240px.
+- **Loading states** — a shared `Skeleton` component plus four route skeletons:
+  `(protected)/loading.tsx` (nav + veil stay, content shapes in),
+  `browse/loading.tsx` (filter bar + card grid), `listing/[id]/loading.tsx`
+  (two-column product shape), `store/[slug]/loading.tsx` (hero + grid).
+- **Error boundary** — `app/error.tsx`: friendly card, a **Try again** button calling
+  `reset()`, the error digest for support, and a home link. Client component by contract.
+- **404 page** — `app/not-found.tsx`: explains the dead link and offers Browse / Home
+  (wired to every `notFound()` in the app and unknown URLs).
+- **Empty states** — audited every list surface end to end (18 distinct empty states:
+  browse filters, saved, messages, notifications, deals ×2 tabs, seller listings, store,
+  profile, every admin section, audit).
+- **README.md** — full rewrite: features, stack, quick start, env table, database/migration
+  workflow, scripts, project map, docs map, deployment summary.
+- **docs/DEPLOYMENT.md** — the complete runbook: Supabase project → API keys → migrations
+  in order → seed → auth redirect URLs → SMTP options (the pending email decision, framed
+  for a no-domain owner) → Vercel import → env table → post-deploy checklist (13 items) →
+  rollback/operations/free-tier notes.
+- **GitHub** — repository connected as `origin` (`iftakharH/unimate-purple`, private) and
+  every phase pushed. `.env.local` stays git-ignored; `.env.example` carries placeholders.
+
+### Gate evidence (run 2026-10-18)
+
+| Gate | Method | Result |
+| --- | --- | --- |
+| `npm run type-check` / `lint` / `build` | local | ✅ / ✅ / ✅ |
+| 240px overflow sweep | `scrollWidth − clientWidth` measured on 10 surfaces | ✅ 0px everywhere |
+| Skeleton renders | route files confirmed by build output + navigation | ✅ pass |
+| Error boundary | `app/error.tsx` present at root (catches all page errors below layout) | ✅ pass |
+| 404 | unknown URL + `notFound()` calls render the friendly page | ✅ verified via the 404s hit during testing |
+| Emails sent during tests | — | **0** |
+
+### How to verify manually (for the user)
+
+1. Narrow your browser window to phone width (or use device emulation at 360px) and walk
+   through: home, browse, a listing, a store, deals, messages, admin — nothing should ever
+   scroll sideways.
+2. Open a page on a cold load (e.g. after `npm run build && npm run start`) — skeletons
+   appear before content.
+3. Visit a nonsense URL like `/nope` — the friendly 404 appears.
+4. Read `README.md` and `docs/DEPLOYMENT.md` — the guide is what we walk through next for
+   the actual deploy.
+
+### Notes / carry-forward
+
+- **Before making the repository public** (it is private today): the docs and
+  `scripts/create-test-users.mjs` contain the local test-account emails/passwords, and
+  `src/lib/constants.ts` mirrors the super-admin emails (they also ship in the client
+  bundle by necessity of the bootstrap design). Rotate or delete the test accounts and
+  review those files first.
+- The dev server hit a machine-level memory error once during this phase (Turbopack cache
+  write); a restart resolves it — builds run with `NODE_OPTIONS=--max-old-space-size=4096`.
+- Deployment itself (Vercel + production Supabase) is a user-consented step — the guide
+  is ready when you are.

@@ -54,6 +54,8 @@ src/
     store/[slug]/           GATED storefront (hero entrance, listing grid, scroll reveals)
     layout.tsx              Root layout (fonts, theme + motion providers, toaster)
     page.tsx                Landing (signed out) / marketplace home (signed in) — kinetic hero
+    error.tsx               Root error boundary (try again + digest + home)
+    not-found.tsx           Friendly 404 (browse / home)
   components/
     brand.tsx, theme-toggle.tsx, submit-button.tsx, user-menu.tsx, settings-tabs.tsx
     password-input.tsx      Password field with the eye visibility toggle (every form)
@@ -95,6 +97,7 @@ docs/
   PROGRESS.md               Phase status, gate evidence, manual test steps + test credentials
   DECISIONS.md              Architecture decisions with reasoning (ADR-style)
   DESIGN.md                 Design system (art direction, tokens, motion, budget)
+  DEPLOYMENT.md             Supabase + Vercel runbook (setup, env, checklist, ops)
 ```
 
 ## Commands
