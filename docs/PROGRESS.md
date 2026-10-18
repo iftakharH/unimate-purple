@@ -2,7 +2,7 @@
 
 > Living document. Updated at the END of every phase, before the user is asked to test.
 > A phase is **DONE** only when all three gates are green and the user confirms the manual
-> test. Current phase: **awaiting user test of Phase 6**.
+> test. Current phase: **awaiting user test of Phase 7**.
 
 ## Phase overview
 
@@ -14,8 +14,8 @@
 | 3 | Roles, seller requests, stores, store pages | **DONE — user proceeded** | See Phase 3 section |
 | 4 | Listings: create/edit with photos, browse, search, filters, product page | **DONE — user proceeded** | See Phase 4 section |
 | 5 | Saved items, My Listings management, sold/sold-out, gated marketplace, veil & footer | **DONE — user proceeded** | See Phase 5 section |
-| 6 | Realtime chat + notifications; glass navbar; kinetic landing | **Awaiting user test** | See Phase 6 section |
-| 7 | Deals tracker + mock payment | Not started | — |
+| 6 | Realtime chat + notifications; glass navbar; kinetic landing | **DONE — user proceeded** | See Phase 6 section |
+| 7 | Deals tracker + mock payment (both completion paths) | **Awaiting user test** | See Phase 7 section |
 | 8 | Profiles and account pages | Not started | — |
 | 9 | Admin panel + audit log | Not started | — |
 | 10 | Responsive polish, README/deploy guide, final verification | Not started | — |
@@ -464,3 +464,78 @@
 - Typing indicators, image messages and message search are deliberately out of scope.
 - Store editor validation caught a real bad phone input during testing (inline error shown) —
   working as designed.
+
+---
+
+## Phase 7 — Deals tracker & mock payment + navbar/landing corrections — 2026-10-18
+
+### Built
+
+- **Make an offer** on every active listing (non-owners): inline form — quantity, offer
+  total (defaults to asking price), **Pay on campus** vs **Pay in app (sandbox)**, optional
+  note. One open deal per listing per buyer (reuses it on repeat offers). Creating a deal
+  notifies the seller.
+- **`/deals`** — "As buyer"/"As seller" tabs with live counts; status chips colour-coded per
+  state; counterpart + listing preview per row.
+- **`/deals/[id]`** — the full tracker: amount/quantity/payment summary, the counterpart,
+  the **real timeline built from `deal_status_history`** (status, who, when, notes), buyer
+  note, cancel reason, and **contextual actions per role and state** — all driven by the
+  database state machine (its exact error text is surfaced, never a generic mask).
+- **Two completion paths** (spec §6), both exercised end to end:
+  - **Pay on campus**: requested → accepted (seller) → completed (seller confirms the
+    handover in one step).
+  - **Pay in app (sandbox)**: requested → accepted → **paid** (buyer pays in the sandbox
+    checkout) → handed_over (seller) → completed (buyer confirms receipt).
+  Completion decrements quantity and flips the listing to `sold` (qty 1) or `sold_out`
+  (multi-unit at zero) — already implemented in the DB, now reachable through the UI.
+- **Mock payment provider** (spec §7, ADR-019): `PaymentProvider` interface +
+  `MockPaymentProvider` (server-only) — `createPayment` → `confirmPayment` → `refund`, with
+  the payments row walking pending → succeeded (that UPDATE is what the DB trigger turns
+  into the deal's `paid`). Method picker (card / mobile wallet / bank); **no card data is
+  ever collected or stored**; deterministic sandbox success; prominent sandbox labels.
+- **Migration 16**: `deal_status_history` (RLS: participants read; writes only via the
+  security-definer triggers), creation notification, transition logging, backfill, and a
+  **genuine bug fixed** — `deals_insert_buyer` contained tautological checks
+  (`l.seller_id = l.seller_id`); it now really enforces: not your own listing, listing
+  active, and enough stock for the requested quantity.
+- **User corrections** (requested before this phase):
+  - **Navbar v2** (ADR-020): no more binary compact mode and **nothing is ever hidden** —
+    the pill's width is a continuous function of page scroll progress: ~90% at the top,
+    easing linearly down to its measured content width at the bottom (items end up
+    shoulder-to-shoulder). Measured live: **89% → 76% at 20% scrolled (the user's own
+    "85% of previous" figure) → 22% at the bottom**, with every link still present.
+  - **Landing shows no marketplace numbers to the public** (ADR-021): the "Right now
+    inside" card is now a qualitative list of what's traded; aggregate counts render only
+    for signed-in users.
+
+### Gate evidence (run 2026-10-18)
+
+| Gate | Method | Result |
+| --- | --- | --- |
+| `npm run type-check` / `lint` / `build` | local | ✅ / ✅ / ✅ (28 routes) |
+| RLS checklist | Supabase MCP — extended to **21 checks** (new T21: seller cannot open a deal on their own listing; cross-seller purchase as positive control; over-quantity blocked) | ✅ 21/21 (helped fix two flaws in my own new test) |
+| Campus path E2E (browser) | admin offers ৳27,000 on the iPad → seller accepts → seller confirms handover → **completed**; DB: listing `sold`, qty 0, history `[requested, accepted, completed]` | ✅ pass |
+| In-app path E2E (browser) | admin offers ৳1,300 (in-app) on the lamp → seller accepts → admin pays via sandbox (mobile wallet) → seller marks handed over → admin confirms receipt → **completed**; DB: payment `succeeded` (`MOCK-…`), listing qty 3→2 stays active, history `[requested, accepted, paid, handed_over, completed]`, 8 deal notifications across both deals | ✅ pass |
+| Navbar scroll curve | measured at 0/20/60/100% scroll on a live page | ✅ 89 → 76 → 49 → 22% width, all items visible throughout |
+| Landing privacy | signed-out landing contains zero numeric marketplace data | ✅ pass |
+| Emails sent during tests | — | **0** (no payment emails either — sandbox only) |
+
+### How to verify manually (for the user)
+
+1. Sign in as `test-admin@eastdelta.edu.bd` / `TestAdmin123`, open any listing from Rafi's
+   Tech Corner and hit **Make an offer** — try both payment modes.
+2. As `test-buyer@eastdelta.edu.bd` / `TestBuyer123`: **Deals → As seller** → accept, then
+   walk the deal through its path. The timeline records every step with who and when, and
+   both parties get notifications at every transition.
+3. Watch a completed deal flip the listing: quantity drops; at zero it becomes sold/sold out.
+4. Scroll any page — the navbar glides smoothly from 90% wide to content-hugging, items
+   closing in but never disappearing.
+
+### Notes / carry-forward
+
+- `marketplace_stats()` (migration 15) is now unused by the landing (ADR-021) — kept,
+  aggregate-only, for future signed-in dashboards.
+- The sandbox provider's `refund` is wired but not exposed in UI — the admin payments
+  screen (Phase 9) will use it.
+- `deals_insert_buyer`'s hardened policy means a deal can only be created against an active
+  listing with enough stock; the app checks the same rules for friendly errors.

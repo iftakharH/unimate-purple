@@ -339,6 +339,21 @@ begin
   end if;
   perform set_config('role', 'postgres', true);
 
+  -- ---------- TEST 21: a seller cannot open a deal on their own listing ----
+  -- (Sellers CAN buy from other sellers — only self-dealing is blocked.)
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', seller_a, 'role', 'authenticated')::text, true);
+  begin
+    insert into public.deals (listing_id, buyer_id, seller_id, payment_mode, quantity, amount_bdt)
+    values (v_listing_a, seller_a, seller_a, 'pay_on_campus', 1, 50);
+    results := results || e'\nFAIL  T21 seller opened a deal on their own listing';
+    failures := failures + 1;
+  exception when insufficient_privilege then
+    results := results || e'\nPASS  T21 seller cannot open a deal on their own listing';
+  end;
+  perform set_config('role', 'postgres', true);
+
   raise exception e'RLS CHECKLIST — % failure(s)%', failures, results;
 end;
 $rls_checklist$;

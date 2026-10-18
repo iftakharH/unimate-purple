@@ -156,6 +156,41 @@ export type Database = {
           },
         ]
       }
+      deal_status_history: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          deal_id: string
+          id: string
+          note: string | null
+          status: Database["public"]["Enums"]["deal_status"]
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          deal_id: string
+          id?: string
+          note?: string | null
+          status: Database["public"]["Enums"]["deal_status"]
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          deal_id?: string
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["deal_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_status_history_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           amount_bdt: number

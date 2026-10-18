@@ -41,6 +41,13 @@ export async function SiteFooter() {
                 </Link>
               </li>
             )}
+            {user && (
+              <li>
+                <Link href="/deals" className={linkClasses}>
+                  My deals
+                </Link>
+              </li>
+            )}
             {canSell ? (
               <li>
                 <Link href="/seller/listings" className={linkClasses}>

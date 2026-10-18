@@ -258,26 +258,25 @@ export default async function Home() {
                 <div className="glass rounded-3xl p-6 sm:p-7">
                   <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                     <LockKeyhole className="size-3.5 text-primary" aria-hidden />
-                    Right now inside
+                    Inside the marketplace
                   </p>
-                  <p className="mt-5 flex items-baseline gap-3">
-                    <span className="tabular text-5xl font-semibold tracking-tighter">
-                      {listingCount}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      live listing{listingCount === 1 ? "" : "s"}
-                    </span>
-                  </p>
-                  <p className="mt-2 flex items-baseline gap-3">
-                    <span className="tabular text-5xl font-semibold tracking-tighter">
-                      {storeCount}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      campus store{storeCount === 1 ? "" : "s"}
-                    </span>
-                  </p>
+                  <ul className="mt-5 space-y-3 text-sm">
+                    {[
+                      "Books, notes & study gear",
+                      "Laptops, phones & accessories",
+                      "Dorm kit, services & event tickets",
+                    ].map((item) => (
+                      <li key={item} className="flex items-center gap-2.5">
+                        <span
+                          className="size-1.5 shrink-0 rounded-full bg-[var(--neon)]"
+                          aria-hidden
+                        />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
                   <p className="mt-6 border-t pt-4 text-sm text-muted-foreground">
-                    Products are for students only —{" "}
+                    Every account is a verified East Delta University student —{" "}
                     <Link
                       href="/login"
                       className="font-medium text-primary hover:underline"

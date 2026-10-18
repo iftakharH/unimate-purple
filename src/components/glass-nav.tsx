@@ -1,9 +1,9 @@
 "use client";
 
-import { Bell, Heart, MessageSquare, Plus, Search } from "lucide-react";
-import { m } from "motion/react";
+import { Bell, Handshake, Heart, MessageSquare, Plus, Search } from "lucide-react";
+import { m, useScroll, useSpring, useTransform } from "motion/react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { Brand } from "@/components/brand";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -81,9 +81,11 @@ function NotificationBell({ initialUnread }: { initialUnread: number }) {
 /**
  * The floating glass navbar (both shells).
  *
- * Expanded near the top of the page it runs at ~90% width; once you scroll it
- * morphs (motion layout, spring) down to a compact pill that hugs its content
- * and sheds secondary links. Backdrop-blur + hairline border = glass.
+ * Not a menu that appears and disappears — nothing is ever hidden. The pill's
+ * width is driven by the page's scroll progress: ~90% of the viewport at the
+ * top, easing down to the width of its own contents (plus a hair of padding)
+ * by the bottom of the page, so the items end up shoulder to shoulder. The
+ * minimum width is measured from the real content, never guessed.
  */
 export function GlassNav({
   user,
@@ -96,110 +98,143 @@ export function GlassNav({
   unreadNotifications: number;
   unreadMessages: number;
 }) {
-  const [compact, setCompact] = useState(false);
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, spring.heavy);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ max: 0, min: 0 });
 
-  useEffect(() => {
-    let frame = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => setCompact(window.scrollY > 24));
+  // Measure the content once (and on resize / responsive changes) — the pill
+  // can never shrink below its own contents, exactly as the user asked.
+  // Note: scrollWidth equals clientWidth on a non-overflowing row, so we sum
+  // the real children instead.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const viewport = document.documentElement.clientWidth;
+      const max = Math.max(300, Math.round(viewport * 0.9));
+      const row = contentRef.current;
+      let natural = max;
+      if (row && row.children.length >= 2) {
+        let sum = 0;
+        for (const child of Array.from(row.children)) {
+          sum += (child as HTMLElement).offsetWidth;
+        }
+        natural = sum + 14; // keep a touch of breath between brand and actions
+      }
+      const min = Math.min(max, natural + 16);
+      setSize({ max, min });
     };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (contentRef.current) observer.observe(contentRef.current);
+    window.addEventListener("resize", measure);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
     };
-  }, []);
+  }, [user, seller]);
+
+  const width = useTransform(progress, [0, 1], [size.max, size.min]);
+  const padX = useTransform(progress, [0, 1], [18, 7]);
 
   return (
     <header className="pointer-events-none fixed inset-x-0 top-2.5 z-50 flex justify-center px-2 sm:top-4 sm:px-4">
       <m.div
-        layout
-        transition={spring.gentle}
+        style={
+          size.max > 0
+            ? { width, paddingLeft: padX, paddingRight: padX }
+            : undefined
+        }
         className={cn(
-          "glass pointer-events-auto flex items-center rounded-full",
-          compact
-            ? "w-fit gap-0.5 py-1.5 pl-2.5 pr-2"
-            : "w-[90%] justify-between gap-2 py-2 pl-4 pr-2 sm:py-2.5 sm:pr-2.5",
+          "glass pointer-events-auto flex items-center justify-center rounded-full py-1.5 sm:py-2",
+          size.max === 0 && "w-[90%]",
         )}
       >
-        <Brand showText={!compact} />
+        <div
+          ref={contentRef}
+          className="flex w-full items-center justify-between gap-1 sm:gap-1.5"
+        >
+          <Brand />
 
-        <div className="flex items-center gap-1">
-          <Button
-            render={<Link href="/browse" />}
-            nativeButton={false}
-            variant="ghost"
-            size="sm"
-            className={cn("hidden sm:inline-flex", compact && "sm:hidden")}
-          >
-            <Search aria-hidden /> Browse
-          </Button>
-
-          {seller && (
+          <div className="flex items-center gap-1">
             <Button
-              render={<Link href="/seller/listings/new" />}
+              render={<Link href="/browse" />}
               nativeButton={false}
+              variant="ghost"
               size="sm"
-              className={cn("hidden sm:inline-flex", compact && "sm:hidden")}
+              className="hidden sm:inline-flex"
             >
-              <Plus aria-hidden /> Sell
+              <Search aria-hidden /> Browse
             </Button>
-          )}
 
-          {user ? (
-            <>
+            {seller && (
               <Button
-                render={<Link href="/messages" aria-label="Messages" />}
+                render={<Link href="/seller/listings/new" />}
                 nativeButton={false}
-                variant="ghost"
-                size="icon-sm"
-                className="relative"
-              >
-                <MessageSquare aria-hidden />
-                {!compact && <CountBadge count={unreadMessages} />}
-              </Button>
-              <Button
-                render={<Link href="/saved" aria-label="Saved items" />}
-                nativeButton={false}
-                variant="ghost"
-                size="icon-sm"
-                className={cn(compact && "hidden")}
-              >
-                <Heart aria-hidden />
-              </Button>
-              <NotificationBell initialUnread={unreadNotifications} />
-            </>
-          ) : (
-            <>
-              <Button
-                render={<Link href="/login" />}
-                nativeButton={false}
-                variant="ghost"
                 size="sm"
-                className={cn("hidden sm:inline-flex", compact && "sm:hidden")}
+                className="hidden sm:inline-flex"
               >
-                Sign in
+                <Plus aria-hidden /> Sell
               </Button>
-              <Button render={<Link href="/signup" />} nativeButton={false} size="sm">
-                Create account
-              </Button>
-            </>
-          )}
+            )}
 
-          <span className={cn("inline-flex", compact && "hidden")}>
+            {user ? (
+              <>
+                <Button
+                  render={<Link href="/deals" aria-label="Deals" />}
+                  nativeButton={false}
+                  variant="ghost"
+                  size="icon-sm"
+                >
+                  <Handshake aria-hidden />
+                </Button>
+                <Button
+                  render={<Link href="/messages" aria-label="Messages" />}
+                  nativeButton={false}
+                  variant="ghost"
+                  size="icon-sm"
+                  className="relative"
+                >
+                  <MessageSquare aria-hidden />
+                  <CountBadge count={unreadMessages} />
+                </Button>
+                <Button
+                  render={<Link href="/saved" aria-label="Saved items" />}
+                  nativeButton={false}
+                  variant="ghost"
+                  size="icon-sm"
+                >
+                  <Heart aria-hidden />
+                </Button>
+                <NotificationBell initialUnread={unreadNotifications} />
+              </>
+            ) : (
+              <>
+                <Button
+                  render={<Link href="/login" />}
+                  nativeButton={false}
+                  variant="ghost"
+                  size="sm"
+                  className="hidden sm:inline-flex"
+                >
+                  Sign in
+                </Button>
+                <Button render={<Link href="/signup" />} nativeButton={false} size="sm">
+                  Create account
+                </Button>
+              </>
+            )}
+
             <ThemeToggle />
-          </span>
 
-          {user && (
-            <UserMenu
-              fullName={user.fullName}
-              email={user.email}
-              role={user.role}
-              avatarUrl={user.avatarUrl}
-            />
-          )}
+            {user && (
+              <UserMenu
+                fullName={user.fullName}
+                email={user.email}
+                role={user.role}
+                avatarUrl={user.avatarUrl}
+              />
+            )}
+          </div>
         </div>
       </m.div>
     </header>

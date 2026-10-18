@@ -387,3 +387,59 @@ brand: loud where it entertains, calm where it works.
 
 **Reversal.** All kinetic pieces are single components (`motion/word-reveal`, `magnetic`,
 `marquee`); the accent is one token; the dark veil is one CSS block.
+
+---
+
+## ADR-019 — Mock payments behind a provider seam (2026-10-18)
+
+**Decision.** Spec §7 implemented literally: a `PaymentProvider` interface
+(`createPayment` / `confirmPayment` / `refund`) with `MockPaymentProvider` as the only
+implementation (`src/lib/payments/provider.ts`, server-only). The checkout walks a payments
+row **pending → succeeded** — that UPDATE is deliberately what the existing database trigger
+listens for to flip the deal to `paid`. The mock succeeds deterministically (demos
+shouldn't flake); failures are simulation territory for the admin payments screen (Phase 9).
+
+- **Guardrails**: only method type, status, amount, transaction id and timestamps are
+  persisted (matching the schema); card numbers/CVV/expiry are never collected, so they can
+  never be stored or logged. Sandbox labelling is prominent in the UI.
+- A real gateway replaces one file.
+
+**Why.** The interface is the spec's own requirement, and routing every UI action through it
+now means swapping in a real provider later touches no page code. The two-step row walk
+exists because the deal state machine is trigger-driven and insert-time status would bypass
+it.
+
+**Reversal.** Implement the interface with a real provider and change one export.
+
+---
+
+## ADR-020 — Navbar v2: width is a continuous function of scroll (2026-10-18)
+
+**Decision.** Supersedes ADR-017's binary toggle. The floating glass pill now maps **page
+scroll progress linearly** from ~90% viewport width to **its own measured content width**:
+the brand and every action stay visible at all times — spacing and width close in, nothing
+is hidden or removed. Measured against the user's own example ("20% scrolled → 85% of the
+previous size"): 89% at top → 76% at 20% (≈0.85 × 90%) → 22% at the bottom. The minimum is
+measured from the real children (a `w-full` row's `scrollWidth` equals its client width —
+taught by the first attempt), smoothed by a heavy spring.
+
+**Why.** The correction was explicit: shrink the contents closer, don't remove them. A
+linear progress map matches the user's arithmetic, and measuring the content guarantees the
+pill can never clip what it holds.
+
+**Reversal.** One component; tune the transform range or revert to any easing.
+
+---
+
+## ADR-021 — No marketplace numbers to the public (2026-10-18)
+
+**Decision.** The signed-out landing shows **zero numeric marketplace data**. The "Right now
+inside" card is qualitative (what's traded + the students-only rule). Aggregate counts
+render only for signed-in users. `marketplace_stats()` (migration 15) stays in the database —
+aggregate-only, still granted for future signed-in dashboards — but the landing no longer
+calls it.
+
+**Why.** User directive. Counts dilute the gate and disclose activity levels that belong
+inside the community.
+
+**Reversal.** Re-render the RPC values in the landing's card (one block).

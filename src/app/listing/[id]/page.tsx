@@ -30,6 +30,7 @@ import { BRAND_HUE, PARTNER_HUES } from "@/lib/colors";
 import { formatBdt, formatDate, initialsOf } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { Gallery } from "./gallery";
+import { MakeOfferButton } from "./make-offer";
 import { MessageSellerButton } from "./message-seller";
 import { ReportListing } from "./report-listing";
 import { SaveButton } from "./save-button";
@@ -210,6 +211,13 @@ export default async function ListingPage({
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
+                {!isOwner && isActive && (
+                  <MakeOfferButton
+                    listingId={listing.id}
+                    price={listing.price_bdt}
+                    maxQuantity={listing.quantity}
+                  />
+                )}
                 <div className="flex gap-2">
                   <SaveButton
                     listingId={listing.id}

@@ -44,7 +44,8 @@ src/
   app/                      Next.js App Router routes (pages, layouts, route handlers)
     (auth)/                 Centered auth shell — login, signup, recovery, change-password, banned
     (protected)/            Signed-in shell with REAL guards — settings, become-seller,
-                            saved, seller (store editor + listings CRUD), admin (grows each phase)
+                            saved, deals, messages, notifications, seller (store editor +
+                            listings CRUD), admin (grows each phase)
     auth/callback/          PKCE code exchange for every Supabase email link
     browse/                 GATED catalog (sign-in) — URL-synced search/filters/pagination
     listing/[id]/           GATED listing page — gallery, save, report, message seller
@@ -54,7 +55,7 @@ src/
   components/
     brand.tsx, theme-toggle.tsx, submit-button.tsx, user-menu.tsx, settings-tabs.tsx
     admin-tabs.tsx, seller-tabs.tsx, motion-provider.tsx, live-refresh.tsx
-    glass-nav.tsx           Floating glass navbar (90% -> compact on scroll) — client
+    glass-nav.tsx           Floating glass pill — width is a scroll-progress function (ADR-020)
     site-nav.tsx            Server wrapper: viewer + live unread counts -> GlassNav
     ambient-backdrop.tsx    Ambient veil — mask + dot grid + colour fields (every page)
     site-footer.tsx         Shared footer (marketplace surfaces; role-aware links)
@@ -73,14 +74,15 @@ src/
     motion.ts               Named spring presets + variants (m.* only, LazyMotion strict)
     constants.ts            Shared mirrors (domain, super admins) — keep in sync with env + SQL
     urls.ts                 siteUrl + sanitizeNextPath (open-redirect guard)
-    validation/             Zod schemas (auth.ts, listing.ts) + ActionState helpers
+    validation/             Zod schemas (auth.ts, listing.ts, deal.ts) + ActionState helpers
+    payments/               PaymentProvider seam + MockPaymentProvider (server-only, ADR-019)
     supabase/               client / server / admin / proxy helpers
   proxy.ts                  Next 16 Proxy (formerly middleware.ts) — session refresh only
 supabase/
   migrations/               Ordered SQL migrations — schema lives HERE, never ad-hoc dashboard
                             edits. Append-only (ADR-007).
   seed.sql                  Idempotent seed (categories). Demo listings arrive in Phase 4.
-  tests/rls_checklist.sql   Canonical 20-check RLS proof. Re-run after ANY schema/policy change.
+  tests/rls_checklist.sql   Canonical 21-check RLS proof. Re-run after ANY schema/policy change.
 scripts/
   create-test-users.mjs     Throwaway accounts via admin API, email_confirm → sends NO email.
                             `node scripts/create-test-users.mjs [--delete]`
