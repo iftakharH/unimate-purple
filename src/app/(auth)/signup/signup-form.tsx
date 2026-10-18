@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/password-input";
 import { ALLOWED_EMAIL_DOMAIN } from "@/lib/constants";
 import { initialActionState } from "@/lib/validation/helpers";
 import { signUpAction } from "../actions";
@@ -100,10 +101,9 @@ export function SignUpForm() {
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               aria-invalid={Boolean(errors.password)}
               aria-describedby={errors.password ? "password-error" : "password-hint"}

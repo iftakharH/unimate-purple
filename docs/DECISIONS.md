@@ -486,3 +486,28 @@ scroll-driven, per the ADR-020 correction.
 
 **Reversal.** `.text-*` reset on the brand wordmark + remove the pill's profile button;
 building the tab bar later would be a new component, not a rewrite.
+
+---
+
+## ADR-024 — Admin panel: app-level auditing + schema-complete by design (2026-10-18)
+
+**Decision.** The admin panel is pure application surface over the Phase 1 schema — **no
+migration was needed**. Every admin capability had its RLS arm (`is_admin()`), guard
+trigger (super-admin protection, immutable payment fields, admin-only refunds) and state
+machine bypass (the deal trigger returns early for admins) already in place.
+
+Every admin Server Action writes exactly one row to `admin_audit_log` (`actor` implicit,
+`action`, `target_type/id`, JSON `details`) through a shared `logAdminAction` helper whose
+failure never blocks the action — audit loss would be a bug, not a user situation. The log
+is append-only from the UI (no edit/delete paths exist). Destructive controls are two-step
+(`ConfirmAction`), and list-row action components are **keyed by the data they act on** so
+revalidation remounts them — their internal submit state can never go stale (found in
+testing: an unban button disappeared after a ban until reload).
+
+**Why.** Pushing moderation logic into SQL would have duplicated what RLS already enforces;
+app-level writes keep the audit granular (before/after values in JSON) and testable. The
+no-migration outcome is evidence the original schema design anticipated the panel — which
+is exactly what Phase 1 set out to do.
+
+**Reversal.** The audit helper is one function; row keys are one prop; the panel adds no
+database coupling beyond existing policies.

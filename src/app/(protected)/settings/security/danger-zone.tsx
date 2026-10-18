@@ -13,8 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/password-input";
 import { initialActionState } from "@/lib/validation/helpers";
 import { deleteAccountAction } from "../actions";
 
@@ -60,10 +60,9 @@ export function DangerZone({ email }: { email: string }) {
               </p>
               <div className="space-y-2">
                 <Label htmlFor="current_password">Confirm your password</Label>
-                <Input
+                <PasswordInput
                   id="current_password"
                   name="current_password"
-                  type="password"
                   autoComplete="current-password"
                   aria-invalid={Boolean(errors.current_password)}
                   aria-describedby={

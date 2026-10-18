@@ -11,8 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/password-input";
 import { initialActionState } from "@/lib/validation/helpers";
 import { resetPasswordAction } from "../actions";
 
@@ -38,10 +38,9 @@ export function ResetPasswordForm() {
           <form action={action} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="password">New password</Label>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 autoComplete="new-password"
                 aria-invalid={Boolean(errors.password)}
                 aria-describedby={errors.password ? "password-error" : "password-hint"}
@@ -60,10 +59,9 @@ export function ResetPasswordForm() {
 
             <div className="space-y-2">
               <Label htmlFor="confirm">Confirm password</Label>
-              <Input
+              <PasswordInput
                 id="confirm"
                 name="confirm"
-                type="password"
                 autoComplete="new-password"
                 aria-invalid={Boolean(errors.confirm)}
                 aria-describedby={errors.confirm ? "confirm-error" : undefined}

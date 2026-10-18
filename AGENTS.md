@@ -46,7 +46,8 @@ src/
     (protected)/            Signed-in shell with REAL guards — settings, become-seller,
                             saved, deals, messages, notifications, profile (public
                             profile page), seller (store editor + listings CRUD),
-                            admin (grows each phase)
+                            admin (overview, users, requests, listings, stores,
+                            deals, payments, reports, categories, audit)
     auth/callback/          PKCE code exchange for every Supabase email link
     browse/                 GATED catalog (sign-in) — URL-synced search/filters/pagination
     listing/[id]/           GATED listing page — gallery, save, report, message seller
@@ -55,6 +56,8 @@ src/
     page.tsx                Landing (signed out) / marketplace home (signed in) — kinetic hero
   components/
     brand.tsx, theme-toggle.tsx, submit-button.tsx, user-menu.tsx, settings-tabs.tsx
+    password-input.tsx      Password field with the eye visibility toggle (every form)
+    confirm-action.tsx      Two-step destructive control used across the admin panel
     admin-tabs.tsx, seller-tabs.tsx, motion-provider.tsx, live-refresh.tsx
     glass-nav.tsx           Floating glass pill — frame-tracked scroll width (ADR-022)
     site-nav.tsx            Server wrapper: viewer + live unread counts -> GlassNav
@@ -70,6 +73,7 @@ src/
                             `nativeButton={false}` for link-buttons)
   lib/
     auth.ts                 getAuthContext (cached), requireUser, requireAdmin — real guards
+    admin.ts                requireAdminContext + logAdminAction (every admin action audits)
     colors.ts               Colour generation rules — ALL generated hues come from here
     format.ts               formatBdt / formatDate / initialsOf
     motion.ts               Named spring presets + variants (m.* only, LazyMotion strict)

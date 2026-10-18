@@ -81,7 +81,7 @@ export function UserMenu({
             </DropdownMenuItem>
           ) : null}
           {role === "admin" ? (
-            <DropdownMenuItem render={<Link href="/admin/users" />}>
+            <DropdownMenuItem render={<Link href="/admin" />}>
               <Shield aria-hidden /> Admin panel
             </DropdownMenuItem>
           ) : null}

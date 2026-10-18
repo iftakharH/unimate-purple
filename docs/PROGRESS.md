@@ -2,7 +2,7 @@
 
 > Living document. Updated at the END of every phase, before the user is asked to test.
 > A phase is **DONE** only when all three gates are green and the user confirms the manual
-> test. Current phase: **awaiting user test of Phase 8**.
+> test. Current phase: **awaiting user test of Phase 9**.
 
 ## Phase overview
 
@@ -16,7 +16,8 @@
 | 5 | Saved items, My Listings management, sold/sold-out, gated marketplace, veil & footer | **DONE — user proceeded** | See Phase 5 section |
 | 6 | Realtime chat + notifications; glass navbar; kinetic landing | **DONE — user proceeded** | See Phase 6 section |
 | 7 | Deals tracker + mock payment (both completion paths) | **DONE — user proceeded** | See Phase 7 section |
-| 8 | Profiles & account pages | **Awaiting user test** | See Phase 8 section |
+| 8 | Profiles & account pages | **DONE — user proceeded** | See Phase 8 section |
+| 9 | Admin panel with audit log | **Awaiting user test** | See Phase 9 section |
 | 8 | Profiles and account pages | Not started | — |
 | 9 | Admin panel + audit log | Not started | — |
 | 10 | Responsive polish, README/deploy guide, final verification | Not started | — |
@@ -606,3 +607,92 @@
 - No migration in this phase — the database was already sufficient (RLS checklist 21/21
   unchanged from Phase 7).
 - Phase 9 (admin panel with audit log) is the next build per the spec's phase list.
+
+---
+
+## Phase 9 — Admin panel with audit log — 2026-10-18
+
+### Built (spec §5/§3: manage users, listings, stores, deals, payments, reports, categories; audit everything)
+
+- **Overview (`/admin`)** — live stat cards (members, active listings, stores, open deals,
+  sandbox payment volume, open reports), a pending-requests callout, the 8 most recent
+  audited actions, and quick links. The account menu now opens straight to `/admin`.
+- **Users** — search (name/email), role + banned filters, and full per-member controls:
+  **role change, ban/unban, permanent delete** (auth user + everything they own via FK
+  cascades). Super Admin accounts are locked to Super Admins; non-super admins can neither
+  touch admins nor grant the admin role — the UI mirrors the database trigger exactly. The
+  invite/direct-create flows from Phase 3 stay on the same page.
+- **Listings** — search + status + category filters with pagination; per-row **hide /
+  restore / delete** and a dedicated **admin edit page** (title, price, stock, condition,
+  status, category, pickup location).
+- **Stores** — search + active filter; **inline edit** (name, description, pickup, phone),
+  **deactivate/activate** (storefront goes offline), and **delete** (warned cascade: the
+  store's listings go with it).
+- **Deals** — status filter + search by listing title; **cancel** and **mark completed**
+  overrides for stuck deals. Completion runs the normal side effects (stock decrement,
+  sold/sold_out flip, notifications, history row) — admins bypass only the *actor rules*.
+- **Payments** — status filter + transaction search; **refund** on succeeded sandbox
+  payments (provider seam, `refunded_at` timestamp, nothing real moves).
+- **Reports** — open/reviewed/dismissed tabs with live counts; **mark reviewed**,
+  **dismiss**, one-click **hide the reported listing** (listing hidden + report closed),
+  and **delete**.
+- **Categories** — add/edit/delete with automatic **slug generation and regeneration on
+  rename** (unique-suffixed), sort order, listing counts, uncategorised count. Deleting
+  leaves listings live and uncategorised.
+- **Audit log (`/admin/audit`)** — every admin action across all sections writes one row
+  (`actor`, `action`, `target_type/id`, JSON `details`). The page offers action search,
+  target-type filter, pagination, actor names, deep links to the target, and expandable
+  JSON details. Entries cannot be edited or deleted from the UI.
+- **Two-step confirmations** — every destructive control (ban, delete, hide, refund,
+  deactivate…) reveals an inline confirmation with an explanation before submitting
+  (`components/confirm-action.tsx`); successful row controls remount via data-derived keys
+  so their state can never go stale.
+- **Password visibility (user request)** — every password field (login, signup,
+  reset-password, forced change-password, delete-account confirmation, member creation
+  where applicable) now has an **eye button** (`components/password-input.tsx`,
+  `aria-pressed` + show/hide labels). Login and signup verified interactively.
+- **No migration needed** — the Phase 1 schema was already complete: admin RLS arms,
+  super-admin guards, refund protection and the deal state machine all existed. The panel
+  is pure application surface plus the app-level audit writes (ADR-024).
+
+### Gate evidence (run 2026-10-18)
+
+| Gate | Method | Result |
+| --- | --- | --- |
+| `npm run type-check` / `lint` / `build` | local | ✅ / ✅ / ✅ (37 routes) |
+| Every admin page renders | browser — 10 sections, all headings/filters present | ✅ pass |
+| Users lifecycle E2E | create → role change (restored test-buyer to seller) → ban → unban → delete via UI; DB: throwaway rows 0, audit `user.create,ban,unban,delete` | ✅ pass |
+| Listings E2E | hide → restore → admin edit (title+price) → delete via UI; audit `listing.hide,restore,update,delete`; throwaway row 0 | ✅ pass |
+| Stores E2E | inline edit saved → deactivate → activate via UI; store ends active; audit `store.update,deactivate,activate` | ✅ pass |
+| Deals E2E | disposable requested deal cancelled via UI; history `[requested, cancelled]`; audit `deal.cancel` | ✅ pass |
+| Payments E2E | disposable succeeded payment refunded via UI; `refunded_at` set; audit `payment.refund` | ✅ pass |
+| Reports E2E | review one, hide-listing one (lamp hidden → restored through the listings page), then both deleted; audit `report.reviewed,hide_listing,delete×2` | ✅ pass |
+| Categories E2E | add → rename (slug regenerated `e2e-instruments-ii`) → delete; audit `category.create,update,delete` | ✅ pass |
+| Password eye | login + signup: type flips password→text→password, labels swap | ✅ pass |
+| Audit log page | 30 entries rendered with actor, chips, links, JSON details, filters | ✅ pass |
+| Emails sent during tests | — | **0** (admin-created accounts are email-confirmed directly) |
+
+### How to verify manually (for the user)
+
+1. Sign in as `test-admin@eastdelta.edu.bd` / `TestAdmin123` → avatar menu → **Admin
+   panel**. Click through the tabs — Overview at `/admin` shows live counts.
+2. Try a harmless action: Listings → open one → **Hide** → **Restore**. Then Audit — the
+   action is recorded with your name and the JSON details.
+3. Reports: report any listing as a buyer, then from /admin/reports use **Hide listing** —
+   the listing disappears and the report closes.
+4. Users: your role dropdown saves with a toast; ban/unban and delete are two-step. Super
+   Admin accounts show as locked.
+5. Open `/login` and `/signup` — the **eye** in the password field shows/hides what you
+   typed.
+
+### Notes / carry-forward
+
+- **The system is append-only by design**: refunds don't reopen deals (the deal reflects
+  the handover; the payment row records the money). Delete-user removes everything the
+  account owned (cascades) — the audit rows survive with the email in `details`.
+- All disposable E2E rows were removed (throwaway members/listing/deal/payment/reports/
+  category); the 30 audit entries from testing remain as the intended permanent record.
+- During this phase the user was already using the live panel (a role change was made
+  mid-build) — the E2E restored `test-buyer` to seller.
+- Phase 10 (the spec's last): responsive polish, error/empty/loading states, README and
+  deployment guide.
