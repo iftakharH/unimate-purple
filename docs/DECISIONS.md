@@ -443,3 +443,46 @@ calls it.
 inside the community.
 
 **Reversal.** Re-render the RPC values in the landing's card (one block).
+
+---
+
+## ADR-022 — Navbar v3: frame-tracked progress (2026-10-18)
+
+**Decision.** Supersedes ADR-020's *mechanism*; the mapping curve is unchanged (linear,
+90% viewport → measured content width). Two defects found while building Phase 8, both
+fixed:
+
+1. **No-scroll-range guard.** On a page shorter than the viewport, motion's default
+   `scrollYProgress` divides by a zero range and reports `1` — the pill snapped to its
+   minimum immediately. Progress is now `scrollY / (scrollHeight − innerHeight)`, clamped,
+   with a `range ≤ 4px → 0` guard.
+2. **Frame tracking.** The value is computed in a `requestAnimationFrame` read (one number
+   per visible frame) rather than a scroll-event subscription: it follows smooth scrolling
+   exactly, cannot miss events, and it also re-measures the content when the viewport width
+   changes without a resize event being observed (observed in the automation environment;
+   the self-heal costs one integer compare per frame).
+
+**Why.** Both defects were reproducible: the short-page snap on desktop, and drift between
+the measured width and reality after viewport changes. The rAF read is the standard
+technique for scroll-linked animation and removes every dependency on event delivery.
+
+**Reversal.** One component; the transform range and curve are untouched.
+
+---
+
+## ADR-023 — Mobile keeps the glass pill; Profile lives in it (2026-10-18)
+
+**Decision.** The spec's layout section suggests a phone bottom tab bar (Home, Browse,
+Saved, Messages, Profile). **User decision: not built.** The glass pill stays the single
+navigation on every viewport, and Profile was added to it directly (person icon beside the
+bell), plus **My profile** in the account menu. Below `sm` (640px) the brand renders
+icon-only so the pill always fits inside 90% of even a 360px viewport with all items
+visible.
+
+**Why.** The pill is the product's navigation identity since Phase 6; a second mobile
+navigation would duplicate state, eat vertical space, and dilute the design. Icon-only
+branding below `sm` is a static responsive rule (like Browse/Sell hiding) — explicitly not
+scroll-driven, per the ADR-020 correction.
+
+**Reversal.** `.text-*` reset on the brand wordmark + remove the pill's profile button;
+building the tab bar later would be a new component, not a rewrite.

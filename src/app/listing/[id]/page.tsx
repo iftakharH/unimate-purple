@@ -288,12 +288,23 @@ export default async function ListingPage({
                     </Avatar>
                     <div className="min-w-0">
                       <p className="flex items-center gap-1 truncate text-sm font-medium">
-                        {seller.full_name ?? "Unimate seller"}
+                        <Link
+                          href={`/profile/${seller.id}`}
+                          className="truncate hover:underline"
+                        >
+                          {seller.full_name ?? "Unimate seller"}
+                        </Link>
                         <BadgeCheck className="size-3.5 text-primary" aria-hidden />
                       </p>
                       {seller.bio ? (
                         <p className="truncate text-xs text-muted-foreground">{seller.bio}</p>
                       ) : null}
+                      <Link
+                        href={`/profile/${seller.id}`}
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        View profile →
+                      </Link>
                     </div>
                   </CardContent>
                 )}

@@ -8,10 +8,12 @@ export function Brand({
   className,
   href = "/",
   showText = true,
+  textClassName,
 }: {
   className?: string;
   href?: string;
   showText?: boolean;
+  textClassName?: string;
 }) {
   return (
     <Link
@@ -25,7 +27,9 @@ export function Brand({
         <Store className="size-4" aria-hidden />
       </span>
       {showText ? (
-        <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>
+        <span className={cn("text-lg font-semibold tracking-tight", textClassName)}>
+          {APP_NAME}
+        </span>
       ) : null}
     </Link>
   );

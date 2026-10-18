@@ -2,7 +2,7 @@
 
 > Living document. Updated at the END of every phase, before the user is asked to test.
 > A phase is **DONE** only when all three gates are green and the user confirms the manual
-> test. Current phase: **awaiting user test of Phase 7**.
+> test. Current phase: **awaiting user test of Phase 8**.
 
 ## Phase overview
 
@@ -15,7 +15,8 @@
 | 4 | Listings: create/edit with photos, browse, search, filters, product page | **DONE — user proceeded** | See Phase 4 section |
 | 5 | Saved items, My Listings management, sold/sold-out, gated marketplace, veil & footer | **DONE — user proceeded** | See Phase 5 section |
 | 6 | Realtime chat + notifications; glass navbar; kinetic landing | **DONE — user proceeded** | See Phase 6 section |
-| 7 | Deals tracker + mock payment (both completion paths) | **Awaiting user test** | See Phase 7 section |
+| 7 | Deals tracker + mock payment (both completion paths) | **DONE — user proceeded** | See Phase 7 section |
+| 8 | Profiles & account pages | **Awaiting user test** | See Phase 8 section |
 | 8 | Profiles and account pages | Not started | — |
 | 9 | Admin panel + audit log | Not started | — |
 | 10 | Responsive polish, README/deploy guide, final verification | Not started | — |
@@ -539,3 +540,69 @@
   screen (Phase 9) will use it.
 - `deals_insert_buyer`'s hardened policy means a deal can only be created against an active
   listing with enough stock; the app checks the same rules for friendly errors.
+
+---
+
+## Phase 8 — Profiles & account pages — 2026-10-18
+
+### Built
+
+- **`/profile/[id]`** — the public profile page (spec §5): deterministic brand-family banner
+  hue, avatar, name, Seller/Admin badge, "member since", bio, and a store card ("Visit
+  store") for sellers. The seller's **active listings** render in the shared card grid —
+  signed-in viewers only, like every marketplace surface (ADR-015). Viewing your own
+  profile shows an **Edit profile** shortcut to `/settings`. Unknown ids → 404; signed-out
+  visitors → login. No new columns or migration needed — the `public_profiles` view
+  (full_name, avatar_url, bio, role, created_at) is exactly the safe surface.
+- **Wired everywhere the spec asks**: the listing page's seller card now links to the
+  profile (name + "View profile →") next to the existing store link; the store page has a
+  **Seller profile** button; the account menu gained **My profile**.
+- **The account side was already built** (Phase 2) — re-audited this phase: profile form
+  (full name, phone, "About you"), avatar uploader, change email, change password, TOTP
+  MFA, sign-out-everywhere, permanent account deletion. All present and rendering.
+- **Navigation (user decision, ADR-023)**: the glass pill stays on phones; **Profile was
+  added to the pill** (icon between notifications and theme). Below the `sm` breakpoint the
+  brand drops its wordmark to keep the pill inside 90% of a 360px screen — everything else
+  stays visible. The spec's "bottom tab bar on phones" is explicitly **not** built.
+- **Navbar v3 mechanics (ADR-022)** — two real defects found while verifying this phase:
+  1. On pages **shorter than the viewport** there is no scroll range, and motion's default
+     `scrollYProgress` reports `1` — the pill snapped straight to its smallest width at the
+     top of such pages. Progress is now computed from `scrollY / range` with a guard
+     (range ≤ 4px → progress 0).
+  2. The progress tracker is now **frame-tracked** (a rAF read) instead of event-driven:
+     one number read per visible frame, follows smooth scrolling exactly, immune to missed
+     scroll events, and it self-heals the content measurement when the viewport width
+     changes without a resize event.
+  The mapping curve is unchanged: linear 90% → measured content width (ADR-020).
+
+### Gate evidence (run 2026-10-18)
+
+| Gate | Method | Result |
+| --- | --- | --- |
+| `npm run type-check` / `lint` / `build` | local | ✅ / ✅ / ✅ (29 routes) |
+| Profile page render | browser — name, Seller badge, member since, store card, active listings (2 cards), banner hue | ✅ pass |
+| Self vs other view | "Edit profile" appears only on own profile | ✅ pass |
+| Wiring | listing page seller card → `/profile/<seller>`; store page → **Seller profile** button; account menu → **My profile** | ✅ all three verified |
+| Navbar curve (desktop) | measured at 0/20/60/100% scroll: 90% → 77% → 52% → 26% viewport width; **9 interactive items at every step** (nothing hidden) | ✅ pass |
+| Short-page guard | profile page with zero scrollable range: pill stays at 90%, no jump | ✅ pass |
+| Mobile (360–540px) | pill fits inside 90% with no horizontal overflow; brand becomes icon-only; all 9 items present | ✅ pass |
+| Settings/security audit | all surfaces present: profile form, avatar, email change, password, MFA, sign-out-everywhere, delete account | ✅ pass |
+| Emails sent during tests | — | **0** |
+
+### How to verify manually (for the user)
+
+1. Open any listing → the seller card now links to their **profile** (name or "View
+   profile →"). The store page has a **Seller profile** button. The account menu has **My
+   profile**.
+2. View your own profile via the menu — you get **Edit profile**; view someone else's — you
+   don't.
+3. Scroll a **short** page (many profiles will be short) — the navbar must stay wide at the
+   top (this was the bug fixed today), then glide closed as you scroll a long page.
+4. On a phone width, the pill shows icon-only branding and still fits — Profile is the
+   person icon next to the bell.
+
+### Notes / carry-forward
+
+- No migration in this phase — the database was already sufficient (RLS checklist 21/21
+  unchanged from Phase 7).
+- Phase 9 (admin panel with audit log) is the next build per the spec's phase list.

@@ -67,11 +67,14 @@ One `SiteFooter` (brand, Marketplace / Account / Campus columns, legal line) on 
 marketplace surfaces: landing, marketplace home, browse, listing, storefront. Column links
 adapt to signed-in state and seller role; no placeholder links.
 
-### Floating glass navbar (ADR-017, revised by ADR-020)
+### Floating glass navbar (ADR-017, revised by ADR-020/022/023)
 
 - One component, both shells: fixed glass pill. **Width is a continuous function of page
   scroll** — ~90% viewport at the top down to the pill's measured content width at the
   bottom; the items close in shoulder-to-shoulder and **nothing is ever hidden**.
+- Progress is frame-tracked (`scrollY / range`, rAF read, no-range guard) — ADR-022.
+- Phones keep the pill (ADR-023): icon-only brand below `sm`; Profile sits beside the bell;
+  no bottom tab bar.
 - Glass = `.glass` utility: translucency + `backdrop-blur(20px) saturate(170%)` + hairline
   lit border + layered shadow (designed for light and dark separately).
 - Live badges (messages, notifications) use the neon token — the only saturated fill the

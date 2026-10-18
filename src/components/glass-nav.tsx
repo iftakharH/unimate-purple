@@ -1,7 +1,7 @@
 "use client";
 
-import { Bell, Handshake, Heart, MessageSquare, Plus, Search } from "lucide-react";
-import { m, useScroll, useSpring, useTransform } from "motion/react";
+import { Bell, Handshake, Heart, MessageSquare, Plus, Search, UserRound } from "lucide-react";
+import { m, useMotionValue, useSpring, useTransform } from "motion/react";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 export type NavUser = {
+  id: string;
   fullName: string;
   email: string;
   role: string;
@@ -98,15 +99,16 @@ export function GlassNav({
   unreadNotifications: number;
   unreadMessages: number;
 }) {
-  const { scrollYProgress } = useScroll();
-  const progress = useSpring(scrollYProgress, spring.heavy);
+  const rawProgress = useMotionValue(0);
+  const progress = useSpring(rawProgress, spring.heavy);
   const contentRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<() => void>(() => {});
   const [size, setSize] = useState({ max: 0, min: 0 });
 
-  // Measure the content once (and on resize / responsive changes) — the pill
-  // can never shrink below its own contents, exactly as the user asked.
-  // Note: scrollWidth equals clientWidth on a non-overflowing row, so we sum
-  // the real children instead.
+  // Measure the content (and on resize / content changes) — the pill can
+  // never shrink below its own contents, exactly as the user asked. NOTE:
+  // scrollWidth of a non-overflowing row equals its client width, so the
+  // real children are summed instead.
   useLayoutEffect(() => {
     const measure = () => {
       const viewport = document.documentElement.clientWidth;
@@ -121,8 +123,11 @@ export function GlassNav({
         natural = sum + 14; // keep a touch of breath between brand and actions
       }
       const min = Math.min(max, natural + 16);
-      setSize({ max, min });
+      setSize((prev) =>
+        prev.max === max && prev.min === min ? prev : { max, min },
+      );
     };
+    measureRef.current = measure;
     measure();
     const observer = new ResizeObserver(measure);
     if (contentRef.current) observer.observe(contentRef.current);
@@ -132,6 +137,34 @@ export function GlassNav({
       window.removeEventListener("resize", measure);
     };
   }, [user, seller]);
+
+  // Track scroll position per frame instead of via scroll events. Reading one
+  // number per visible frame is free, follows smooth scrolling exactly, and
+  // can never miss a frame or depend on event delivery. A page with nothing
+  // to scroll has no "progress" — the pill stays at its widest.
+  useEffect(() => {
+    let raf = 0;
+    let lastY = -1;
+    let lastWidth = -1;
+    const tick = () => {
+      const doc = document.documentElement;
+      // Self-heal the measurement if the viewport changed without a resize
+      // event (belt and braces for exotic environments).
+      if (doc.clientWidth !== lastWidth) {
+        lastWidth = doc.clientWidth;
+        measureRef.current();
+      }
+      const y = window.scrollY;
+      if (y !== lastY) {
+        lastY = y;
+        const range = doc.scrollHeight - window.innerHeight;
+        rawProgress.set(range > 4 ? Math.min(1, Math.max(0, y / range)) : 0);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [rawProgress]);
 
   const width = useTransform(progress, [0, 1], [size.max, size.min]);
   const padX = useTransform(progress, [0, 1], [18, 7]);
@@ -153,7 +186,7 @@ export function GlassNav({
           ref={contentRef}
           className="flex w-full items-center justify-between gap-1 sm:gap-1.5"
         >
-          <Brand />
+          <Brand textClassName="hidden sm:inline" />
 
           <div className="flex items-center gap-1">
             <Button
@@ -206,6 +239,16 @@ export function GlassNav({
                   <Heart aria-hidden />
                 </Button>
                 <NotificationBell initialUnread={unreadNotifications} />
+                <Button
+                  render={
+                    <Link href={`/profile/${user.id}`} aria-label="My profile" />
+                  }
+                  nativeButton={false}
+                  variant="ghost"
+                  size="icon-sm"
+                >
+                  <UserRound aria-hidden />
+                </Button>
               </>
             ) : (
               <>
@@ -228,6 +271,7 @@ export function GlassNav({
 
             {user && (
               <UserMenu
+                id={user.id}
                 fullName={user.fullName}
                 email={user.email}
                 role={user.role}

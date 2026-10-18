@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgePlus, LayoutDashboard, LogOut, Settings, Shield } from "lucide-react";
+import { BadgePlus, LayoutDashboard, LogOut, Settings, Shield, UserRound } from "lucide-react";
 import Link from "next/link";
 
 import { signOutAction } from "@/app/(auth)/actions";
@@ -26,11 +26,13 @@ function initialsOf(name: string, email: string): string {
 }
 
 export function UserMenu({
+  id,
   fullName,
   email,
   role,
   avatarUrl,
 }: {
+  id: string;
   fullName: string;
   email: string;
   role: string;
@@ -62,6 +64,9 @@ export function UserMenu({
             <span className="block truncate font-normal">{email}</span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem render={<Link href={`/profile/${id}`} />}>
+            <UserRound aria-hidden /> My profile
+          </DropdownMenuItem>
           <DropdownMenuItem render={<Link href="/settings" />}>
             <Settings aria-hidden /> Settings
           </DropdownMenuItem>

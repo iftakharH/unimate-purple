@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Phone, Store as StoreIcon } from "lucide-react";
+import { Phone, Store as StoreIcon, UserRound } from "lucide-react";
 
 import { AmbientBackdrop } from "@/components/ambient-backdrop";
 import { ListingCard, type CardListing } from "@/components/listing-card";
@@ -95,6 +95,14 @@ export default async function StorePage({ params }: { params: StorePageParams })
             <Phone aria-hidden /> {store.contact_phone}
           </Button>
         )}
+        <Button
+          render={<Link href={`/profile/${store.owner_id}`} />}
+          nativeButton={false}
+          variant="outline"
+          size="sm"
+        >
+          <UserRound aria-hidden /> Seller profile
+        </Button>
         <p className="text-xs text-muted-foreground">
           Open any listing to message the seller.
         </p>

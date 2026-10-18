@@ -44,8 +44,9 @@ src/
   app/                      Next.js App Router routes (pages, layouts, route handlers)
     (auth)/                 Centered auth shell — login, signup, recovery, change-password, banned
     (protected)/            Signed-in shell with REAL guards — settings, become-seller,
-                            saved, deals, messages, notifications, seller (store editor +
-                            listings CRUD), admin (grows each phase)
+                            saved, deals, messages, notifications, profile (public
+                            profile page), seller (store editor + listings CRUD),
+                            admin (grows each phase)
     auth/callback/          PKCE code exchange for every Supabase email link
     browse/                 GATED catalog (sign-in) — URL-synced search/filters/pagination
     listing/[id]/           GATED listing page — gallery, save, report, message seller
@@ -55,7 +56,7 @@ src/
   components/
     brand.tsx, theme-toggle.tsx, submit-button.tsx, user-menu.tsx, settings-tabs.tsx
     admin-tabs.tsx, seller-tabs.tsx, motion-provider.tsx, live-refresh.tsx
-    glass-nav.tsx           Floating glass pill — width is a scroll-progress function (ADR-020)
+    glass-nav.tsx           Floating glass pill — frame-tracked scroll width (ADR-022)
     site-nav.tsx            Server wrapper: viewer + live unread counts -> GlassNav
     ambient-backdrop.tsx    Ambient veil — mask + dot grid + colour fields (every page)
     site-footer.tsx         Shared footer (marketplace surfaces; role-aware links)

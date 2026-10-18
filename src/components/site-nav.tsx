@@ -34,6 +34,7 @@ export async function SiteNav() {
       user={
         user
           ? {
+              id: user.id,
               fullName: profile?.full_name ?? "",
               email: user.email ?? "",
               role: profile?.role ?? "buyer",
