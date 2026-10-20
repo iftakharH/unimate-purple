@@ -781,4 +781,9 @@ Applied after Phase 10, ahead of real users:
 - **Production security runbook** added to `docs/DEPLOYMENT.md` §3: dashboard toggles
   (email confirmation, secure email change, leaked-password protection, advisors), SMTP
   requirement, storage policy note.
-- **Gates:** type-check / lint / build green (38 routes).
+- **Advisor pass** (migration 18, ADR-009 update): revoked EXECUTE on the two remaining
+  API-exposed trigger functions (`on_deal_created`, `set_updated_at`) and added the missing
+  index on `deal_status_history(actor_id)`. Remaining findings are the documented accepted
+  ones (security-definer profile view, caller-scoped helpers, aggregates-only stats).
+- **Gates:** type-check / lint / build green (38 routes); RLS checklist 21/21 re-run after
+  migrations 17 and 18.

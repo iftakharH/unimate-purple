@@ -157,11 +157,15 @@ execution and cannot be folded.
   expressions; they return only booleans about the calling user.
 - RPC-executable `ensure_super_admin()` (authenticated): the single intentional RPC — it can
   only ever promote the caller and only when the caller's own email is on the hardcoded list.
+- RPC-executable `marketplace_stats()` (anon + authenticated): aggregates-only counts; the
+  landing calls it on every visit and only renders the numbers to signed-in users (ADR-021).
 - `unused_index` INFO ×21: expected on an empty database.
 
 **Fixed instead of accepted:** 7× missing `search_path` pins; ~20 internal trigger functions
 exposed at `/rest/v1/rpc/*` (EXECUTE revoked from anon/authenticated); 6× missing foreign-key
-indexes; the categories and payments double-policy overlaps (migrations 10–11).
+indexes; the categories and payments double-policy overlaps (migrations 10–11). Migration 16
+added `on_deal_created()` after that pass; migration 18 revoked it (and the generic
+`set_updated_at()`) from the API roles and indexed `deal_status_history(actor_id)`.
 
 **Final advisor state (verified):** security = only the accepted findings above; performance =
 only `unused_index` INFO, expected on an empty database. Never blindly "fix" the accepted
