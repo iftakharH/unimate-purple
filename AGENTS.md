@@ -94,6 +94,7 @@ scripts/
   create-test-users.mjs     Throwaway accounts via admin API, email_confirm → sends NO email.
                             `node scripts/create-test-users.mjs [--delete]`
 docs/
+  ARCHITECTURE.md           Full technical reference — stack, data model, security, routes
   PROGRESS.md               Phase status, gate evidence, manual test steps + test credentials
   DECISIONS.md              Architecture decisions with reasoning (ADR-style)
   DESIGN.md                 Design system (art direction, tokens, motion, budget)

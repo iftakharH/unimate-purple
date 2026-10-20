@@ -89,8 +89,9 @@ docs/          PROGRESS (phases + evidence) · DECISIONS (ADRs) · DESIGN · DEP
 
 | Document | Contents |
 | --- | --- |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full technical reference — stack, data model, security, routes |
 | [`docs/PROGRESS.md`](docs/PROGRESS.md) | Phase-by-phase status, gate evidence, manual test scripts |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture decisions with reasoning (ADR-001…024) |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture decisions with reasoning (ADR-001…025) |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | Design system — palette, motion budget, navbar rules |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Supabase + Vercel production setup, step by step |
 
