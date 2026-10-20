@@ -72,7 +72,27 @@ project → migrations → Vercel → post-deploy checks.
 5. **Optional custom domain** — Vercel → Domains → add; then update the Supabase Site URL +
    redirect URLs and `NEXT_PUBLIC_SITE_URL` to match.
 
-## 3. Post-deploy checklist
+## 3. Production security settings (Supabase dashboard — 5 minutes)
+
+The app enforces its own security in code and RLS; these switches live only in the
+dashboard and must be set once per project:
+
+- **Auth → Providers → Email**: *Confirm email* **on** (the app is built around it),
+  *Secure email change* **on**.
+- **Auth → Passwords**: minimum length **8** (matches the app's own rule), and
+  **leaked-password protection** **on** (rejects passwords seen in breach corpora).
+- **Auth → Rate limits**: keep the defaults — they already throttle signup and resets.
+- **Auth → URL Configuration**: production domain + `/auth/callback` (step 1.4).
+- **Database → Advisors → Security Advisor**: run it after the migrations. A fresh
+  project should show only "leaked password protection disabled" until you flip the
+  toggle above; accepted dev findings are catalogued in ADR-009.
+- **Storage**: all three buckets are public **by design** (serving photos via the public
+  URL). Migration 17 removed the storage-object SELECT policies so the anon key cannot
+  enumerate uploads. Do not re-add `public_read` policies.
+- **SMTP**: configure before announcing the link — verification, invite and reset emails
+  all depend on it (step 1.5).
+
+## 4. Post-deploy checklist
 
 - [ ] Visit `/login` — page renders, password eye works.
 - [ ] Sign up with a `SUPER_ADMIN_EMAILS` address → avatar menu shows **Admin panel**.
@@ -85,7 +105,7 @@ project → migrations → Vercel → post-deploy checks.
 - [ ] Run `supabase/tests/rls_checklist.sql` (it rolls itself back) — 21/21 pass.
 - [ ] Non-campus email is rejected at signup unless invited.
 
-## 4. Operating notes
+## 5. Operating notes
 
 - **Deploys**: push to `main` → Vercel builds. Every PR gets a preview URL.
 - **Rollback**: Vercel → Deployments → *Promote to Production* on the last good build.

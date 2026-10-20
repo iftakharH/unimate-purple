@@ -748,8 +748,7 @@
 2. Open a page on a cold load (e.g. after `npm run build && npm run start`) — skeletons
    appear before content.
 3. Visit a nonsense URL like `/nope` — the friendly 404 appears.
-4. Read `README.md` and `docs/DEPLOYMENT.md` — the guide is what we walk through next for
-   the actual deploy.
+4. Read `README.md` and `docs/DEPLOYMENT.md` — the guide is what we walk through next for the actual deploy.
 
 ### Notes / carry-forward
 
@@ -762,3 +761,24 @@
   write); a restart resolves it — builds run with `NODE_OPTIONS=--max-old-space-size=4096`.
 - Deployment itself (Vercel + production Supabase) is a user-consented step — the guide
   is ready when you are.
+
+---
+
+## Pre-launch hardening — 2026-10-21 (before the first public deployment)
+
+Applied after Phase 10, ahead of real users:
+
+- **Storage enumeration closed** (migration 17, ADR-025): dropped the `*_public_read`
+  SELECT policies on `storage.objects` — the public anon key could otherwise list every
+  uploaded file. Public URLs, uploads, replacements and cleanup are unaffected
+  (verified: RLS checklist 21/21 after the change).
+- **Security headers + no framework banner** (`next.config.ts`, ADR-025): nosniff,
+  frame-deny, referrer policy, permissions policy, COOP; `poweredByHeader: false`.
+  The `next/image` remote host now derives from `NEXT_PUBLIC_SUPABASE_URL` — one build
+  works against any Supabase project (required for production).
+- **Dependency hygiene**: `shadcn` (codegen CLI) moved to devDependencies —
+  **`npm audit --omit=dev` → 0 vulnerabilities** (was 7 high in the production tree).
+- **Production security runbook** added to `docs/DEPLOYMENT.md` §3: dashboard toggles
+  (email confirmation, secure email change, leaked-password protection, advisors), SMTP
+  requirement, storage policy note.
+- **Gates:** type-check / lint / build green (38 routes).

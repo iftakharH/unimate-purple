@@ -511,3 +511,32 @@ is exactly what Phase 1 set out to do.
 
 **Reversal.** The audit helper is one function; row keys are one prop; the panel adds no
 database coupling beyond existing policies.
+
+---
+
+## ADR-025 — Pre-launch hardening: storage enumeration, headers, dependency hygiene (2026-10-21)
+
+**Decision.** Three changes before the first public deployment:
+
+1. **Storage enumeration closed** (migration 17): the `*_public_read` SELECT policies on
+   `storage.objects` were dropped. Public buckets serve files through the
+   `/storage/v1/object/public/` endpoint **without consulting RLS**, and the app never
+   lists or downloads through the storage API (uploads = INSERT own, cleanup = DELETE own,
+   rendering = `getPublicUrl` + `next/image`). The SELECT policies therefore only enabled
+   *enumerating every uploaded file* with the public anon key — a privacy leak, not a
+   feature.
+2. **Baseline security headers** in `next.config.ts` (nosniff, `X-Frame-Options: DENY`,
+   strict-origin-when-cross-origin referrers, camera/mic/geolocation/payment disabled,
+   COOP same-origin, `poweredByHeader: false`). The image remote pattern is derived from
+   `NEXT_PUBLIC_SUPABASE_URL` so the same build works against any Supabase project.
+   A strict CSP is intentionally deferred — it needs nonce plumbing through Next's inline
+   runtime scripts; shipping a broken CSP would be worse than none.
+3. **Dependency hygiene**: `shadcn` (a codegen CLI, never imported by app code) moved to
+   `devDependencies`. `npm audit --omit=dev` is now **0 vulnerabilities**; the remaining
+   dev-tree advisories are the accepted ones from ADR-006.
+
+**Why.** These are the concrete, testable gaps that matter when real students use the
+app: no scraping of private-adjacent media, no framework banner, no vulnerable packages
+in the production bundle graph.
+
+**Reversal.** One migration, one config block, one package.json line each.
