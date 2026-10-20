@@ -72,6 +72,8 @@ file into the SQL editor in order. Full walkthrough: [`docs/DEPLOYMENT.md`](docs
 | `npm run lint` | ESLint (flat config) |
 | `npm run build` | Production build |
 | `node scripts/create-test-users.mjs` | Throwaway local test accounts (`--delete` to remove) |
+| `node scripts/create-super-admin.mjs` | Provision a super-admin account (prints a temp password) |
+| `node scripts/cleanup-test-accounts.mjs` | Remove the legacy test accounts + their data/storage |
 
 ## Project map
 

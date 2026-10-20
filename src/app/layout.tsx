@@ -16,13 +16,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  applicationName: "Unimate",
   title: {
     default: "Unimate — East Delta University Student Marketplace",
     template: "%s · Unimate",
   },
   description:
     "Buy and sell within the East Delta University community. Browse listings from campus sellers, chat in real time, and deal safely in BDT.",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "Unimate",
+    title: "Unimate — East Delta University Student Marketplace",
+    description:
+      "The campus marketplace, done properly. Buy and sell in BDT, chat in real time, meet on campus.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Unimate — East Delta University Student Marketplace",
+    description:
+      "The campus marketplace, done properly. Buy and sell in BDT, chat in real time, meet on campus.",
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

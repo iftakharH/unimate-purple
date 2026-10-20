@@ -108,6 +108,8 @@ docs/
 | `npm run type-check` | `tsc --noEmit` |
 | `npm run lint` | ESLint (flat config) |
 | `npm run build` | Production build (Turbopack) |
+| `node scripts/create-super-admin.mjs` | Provision a super admin (prints a temp password) |
+| `node scripts/cleanup-test-accounts.mjs` | Remove legacy test accounts + their data |
 
 ## Next.js 16 conventions you MUST follow (differ from older training data)
 

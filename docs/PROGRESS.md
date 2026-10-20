@@ -787,3 +787,41 @@ Applied after Phase 10, ahead of real users:
   ones (security-definer profile view, caller-scoped helpers, aggregates-only stats).
 - **Gates:** type-check / lint / build green (38 routes); RLS checklist 21/21 re-run after
   migrations 17 and 18.
+
+---
+
+## Public launch — 2026-10-21
+
+**Live:** https://unimate-purple-edu.vercel.app (Vercel, production build from `main`).
+
+### Verified live (external checks + browser)
+
+| Surface | Result |
+| --- | --- |
+| Security headers on every response | ✅ nosniff · frame DENY · referrer policy · COOP · no `x-powered-by` |
+| Landing, sign-in, gated redirects, 404 | ✅ correct titles/content; signed-out routes land on the login page |
+| Super-admin sign-in + admin panel | ✅ dashboard (2 members, 0 everywhere), audit, listings, all tabs |
+| Browse / store / listing / profile (signed in) | ✅ data renders; **next/image loads Supabase photos on Vercel** (2/2) |
+| Deals / messages / notifications / saved / settings-security | ✅ all render |
+| Empty states after cleanup | ✅ browse "0 listings", dashboard zeros |
+| Database state | ✅ 2 users (both super admins), 0 listings/stores/deals/messages/invites/reports; 30 audit rows retained |
+| RLS acceptance checklist | ✅ 21/21 (same database) |
+
+### Launch clean-up performed
+
+- Deleted the two test accounts (`test-admin@`, `test-buyer@`) — their store, listings,
+  deals, conversations, messages and notifications cascaded away; their storage objects
+  (1 avatar, 1 listing photo, 2 store assets) were removed and one stale invite deleted.
+- Super-admin access: the two `SUPER_ADMIN_EMAILS` accounts are provisioned and verified
+  (credentials shared with the owner directly, never committed).
+- Brand polish: `app/icon.svg` (browser tab icon), branded `opengraph-image` (link
+  previews), `public/robots.txt` (private routes disallowed), OpenGraph/Twitter metadata.
+
+### Remaining owner actions (dashboard-only)
+
+- Vercel env `NEXT_PUBLIC_SITE_URL` → the production domain, then redeploy (email links).
+- Supabase → Auth → URL Configuration: Site URL + `…/auth/callback` redirect.
+- Supabase → Auth → Passwords → enable leaked-password protection.
+- Ops scripts now committed: `scripts/create-super-admin.mjs` (provision a super admin,
+  prints the temporary password once) and `scripts/cleanup-test-accounts.mjs` (remove the
+  legacy test accounts + their storage). Both read `.env.local` and never contain secrets.

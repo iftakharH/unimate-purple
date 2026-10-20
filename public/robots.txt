@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /settings
+Disallow: /messages
+Disallow: /deals
+Disallow: /saved
+Disallow: /notifications
+Disallow: /profile/
+Disallow: /seller/
+Disallow: /auth/
+Disallow: /change-password
+Disallow: /banned
